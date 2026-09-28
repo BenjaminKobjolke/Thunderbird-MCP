@@ -21,3 +21,8 @@ probe/*.log
 
 # Per-plan review artifacts (subagent-driven development)
 .superpowers/
+
+# Claude Code local state and root plan files
+.claude/
+/PLAN_*.md
+tmp/commit_msg.tmp
