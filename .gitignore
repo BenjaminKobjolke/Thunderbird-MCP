@@ -26,3 +26,4 @@ probe/*.log
 .claude/
 /PLAN_*.md
 tmp/commit_msg.tmp
+claude-plans
