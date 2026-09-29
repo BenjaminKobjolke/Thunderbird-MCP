@@ -27,3 +27,4 @@ probe/*.log
 /PLAN_*.md
 tmp/commit_msg.tmp
 claude-plans
+tickets/
