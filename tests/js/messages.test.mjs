@@ -356,6 +356,8 @@ describe("messages.list", () => {
     const list = loadHandlers(messages, folders).get("messages.list");
     assert.deepEqual(ids(await list({ folderId: FOLDER, limit: 3 })), [100, 101, 102]);
     assert.equal(messages.calls.some((call) => call.method === "list" && call.args.length > 1), false);
+    assert.ok(messages.calls.filter((call) => call.method === "query" && call.args[0].fromDate)
+      .every((call) => Object.prototype.toString.call(call.args[0].fromDate) === "[object Date]"));
   });
 
   it("combines inboxes and resolves a unified inbox", async () => {

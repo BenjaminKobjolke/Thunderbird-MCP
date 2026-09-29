@@ -186,7 +186,10 @@
    * `continueList` away from the page we wanted.
    */
   async function startQuery(query) {
-    const first = await browser.messages.query(query);
+    const dates = { ...query };
+    if (dates.fromDate) dates.fromDate = new Date(dates.fromDate);
+    if (dates.toDate) dates.toDate = new Date(dates.toDate);
+    const first = await browser.messages.query(dates);
     return typeof first === "string" ? browser.messages.continueList(first) : first;
   }
 
