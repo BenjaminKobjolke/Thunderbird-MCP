@@ -25,6 +25,11 @@ probe/*.log
 # Claude Code local state and root plan files
 .claude/
 /PLAN_*.md
+PLAN.md
+HANDOFF.md
 tmp/commit_msg.tmp
 claude-plans
 tickets/
+
+# Tickets Watcher local install state
+tools/tickets-watcher.json
