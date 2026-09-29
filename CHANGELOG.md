@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `mail_save_attachment` failed for every attachment with "atob is not defined".
+  The privileged half has no DOM globals, so it now decodes through
+  `ChromeUtils.base64URLDecode`, like `files.write`.
+
 ## 1.3.0 — 2026-09-08
 
 Every search tool in 1.2.0 was broken, and the bridge could fail in a way nothing

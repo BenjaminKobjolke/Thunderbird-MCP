@@ -452,6 +452,13 @@ export function fakeSandbox({ modules = {}, prefs = {} } = {}) {
 
   return {
     ChromeUtils: {
+      base64URLDecode(text, { padding } = {}) {
+        if (!/^[A-Za-z0-9_-]*={0,2}$/.test(text)) {
+          throw new Error("invalid base64url");
+        }
+        const bytes = Uint8Array.from(Buffer.from(text, "base64url"));
+        return bytes.buffer;
+      },
       importESModule(url) {
         if (known[url]) {
           return known[url];
