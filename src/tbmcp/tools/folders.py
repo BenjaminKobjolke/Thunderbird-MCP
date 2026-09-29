@@ -152,8 +152,8 @@ def register(reg: Registrar) -> None:
     ) -> dict[str, Any]:
         """Get the unified folder that spans every account, e.g. all inboxes at once.
 
-        Its id works anywhere a folder id is accepted, so `mail_list` on the unified
-        inbox lists new mail across all accounts in one call.
+        Its id works with `mail_list`. For one call that finds and lists all inboxes,
+        use `mail_list(special_use="inbox")`.
         """
         result = await call(
             "folders.getUnified",

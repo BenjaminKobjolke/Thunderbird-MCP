@@ -97,7 +97,7 @@ Full signatures in [docs/TOOL-REFERENCE.md](docs/TOOL-REFERENCE.md).
 | Tool | | What it does |
 | --- | --- | --- |
 | `mail_search` | read | Search the user's mail. Combine `full_text` with any filters below |
-| `mail_list` | read | List messages in one folder, newest first by default |
+| `mail_list` | read | List one folder or every folder of a type, newest first by default |
 | `mail_get` | read | Read one message. `text` gives headers plus the plain-text body |
 | `mail_get_many` | read | Read up to 50 messages in one round trip — for triaging a search result |
 | `mail_get_source` | read | Fetch a message's raw RFC 5322 source, for header forensics |

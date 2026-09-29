@@ -51,6 +51,36 @@ async def test_search_requires_at_least_one_filter(fake_bridge) -> None:
     assert bridge.calls == []
 
 
+async def test_list_all_inboxes_and_include_folder_path(fake_bridge) -> None:
+    bridge = fake_bridge(
+        {
+            "messages.list": {
+                "messages": [{**MESSAGE, "folderPath": "/Inbox"}],
+                "folderIds": ["account1://INBOX"],
+            }
+        }
+    )
+    async with Client(_server(bridge)) as client:
+        result = await client.call_tool("mail_list", {"special_use": "inbox", "limit": 5})
+    assert not result.is_error, _text(result)
+    params = bridge.params_for("messages.list")
+    assert params["specialUse"] == "inbox"
+    assert "folderId" not in params
+    assert result.structured_content["items"][0]["folderPath"] == "/Inbox"
+    assert result.structured_content["folderIds"] == ["account1://INBOX"]
+
+
+async def test_list_requires_exactly_one_folder_scope(fake_bridge) -> None:
+    bridge = fake_bridge()
+    async with Client(_server(bridge)) as client:
+        missing = await client.call_tool("mail_list", {})
+        both = await client.call_tool(
+            "mail_list", {"folder_id": "account1://INBOX", "special_use": "inbox"}
+        )
+    assert missing.is_error and both.is_error
+    assert bridge.calls == []
+
+
 async def test_search_maps_arguments_onto_the_query(fake_bridge) -> None:
     bridge = fake_bridge({"messages.query": {"messages": [MESSAGE], "cursor": "list-1"}})
     async with Client(_server(bridge)) as client:

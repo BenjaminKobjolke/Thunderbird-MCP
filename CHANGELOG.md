@@ -4,12 +4,15 @@
 
 ### Added
 
+- `mail_list(special_use="inbox")` returns the newest messages across all account inboxes in one call.
 - Folder rules in `config.toml` (`TBMCP_CONFIG` or `--config`) let `mail_move`,
   `folder_create`, `folder_rename`, and `folder_delete` (empty subfolders only)
   run without confirmation inside chosen folders, so headless agents can triage mail.
 
 ### Fixed
 
+- `mail_list` no longer passes unsupported sort arguments to Thunderbird's `messages.list`.
+  Newest-first mail search and listing stop after a recent date window has enough matches.
 - `mail_save_attachment` failed for every attachment with "atob is not defined".
   The privileged half has no DOM globals, so it now decodes through
   `ChromeUtils.base64URLDecode`, like `files.write`.

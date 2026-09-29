@@ -20,7 +20,7 @@ settings 11, admin 7. `tbmcp tools --toolsets all` prints the live list.
 | Tool | Bridge method | Notes |
 | --- | --- | --- |
 | `mail_search` | `messages.query` | `full_text` uses the global index; paginated |
-| `mail_list` | `messages.list` | one folder, sorted |
+| `mail_list` | `messages.list` | one folder or every folder of a type, sorted |
 | `mail_get` | `messages.read` | `detail=summary\|text\|full` |
 | `mail_get_many` | `messages.readMany` | ≤50 ids, progress-reporting |
 | `mail_get_source` | `messages.raw` | needs offline copy on IMAP |

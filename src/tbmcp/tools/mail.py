@@ -36,6 +36,7 @@ from ._common import (
     require_ids,
     trim,
 )
+from .folders import SpecialUse
 
 
 def register(reg: Registrar) -> None:
@@ -153,23 +154,27 @@ def register(reg: Registrar) -> None:
             **reported,
         )
 
-    @reg.read_tool(title="List a folder")
+    @reg.read_tool(title="List mail")
     async def mail_list(
-        folder_id: str,
+        folder_id: str | None = None,
         limit: int = 25,
         cursor: str | None = None,
         sort_by: Literal["date", "subject", "author", "size", "read", "flagged"] = "date",
         descending: bool = True,
+        special_use: SpecialUse | None = None,
     ) -> dict[str, Any]:
-        """List messages in one folder, newest first by default.
+        """List one folder or every folder of a type, newest first by default.
 
-        Use `folder_list` to discover folder ids. For anything selective, prefer
-        `mail_search`.
+        `special_use="inbox"` lists the newest messages of every account's inbox
+        in one call — the answer to "what is my newest email". Use `folder_list`
+        to discover one folder's id. For selective queries, use `mail_search`.
         """
+        if bool(folder_id) == bool(special_use):
+            raise UsageError("Give exactly one of folder_id or special_use.")
         result = await call(
             "messages.list",
             {
-                "folderId": folder_id,
+                **({"folderId": folder_id} if folder_id else {"specialUse": special_use}),
                 "limit": clamp(limit, default=25, minimum=1, maximum=200, field="limit"),
                 "cursor": cursor,
                 "sortType": sort_by,
@@ -181,7 +186,8 @@ def register(reg: Registrar) -> None:
             [message_summary(m) for m in result.get("messages", [])],
             cursor=result.get("cursor"),
             total=result.get("totalAvailable"),
-            folderId=folder_id,
+            **({"folderId": folder_id} if folder_id else {}),
+            **({"folderIds": result["folderIds"]} if "folderIds" in result else {}),
         )
 
     # ------------------------------------------------------------------- reading

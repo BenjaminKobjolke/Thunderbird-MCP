@@ -77,7 +77,7 @@
   }
 
   /** Hold `rest` for the next call, and return the cursor that claims it back. */
-  function park(listId, rest) {
+  function park(listId, rest, next = null) {
     if (parked.size >= PARKED_PAGES) {
       const [oldest] = parked.keys(); // a Map iterates in insertion order
       abandonList(parked.get(oldest).listId);
@@ -85,7 +85,7 @@
     }
     parkSequence += 1;
     const cursor = `${CURSOR_PREFIX}${LOAD_ID}:${parkSequence}`;
-    parked.set(cursor, { listId, rest });
+    parked.set(cursor, { listId, rest, next });
     return cursor;
   }
 
@@ -119,10 +119,12 @@
     const messages = [];
     let pending = []; // fetched but not yet returned, in order
     let listId = null; // the Thunderbird list that continues after `pending`
+    let next = null;
 
     const absorb = (page) => {
       pending = page && page.messages ? [...page.messages] : [];
       listId = (page && page.id) || null;
+      next = (page && page.next) || null;
     };
 
     if (!cursor) {
@@ -131,6 +133,7 @@
       const held = unpark(cursor);
       pending = held.rest;
       listId = held.listId;
+      next = held.next;
     } else {
       try {
         absorb(await browser.messages.continueList(cursor));
@@ -147,14 +150,22 @@
         if (messages.length >= limit) {
           // Stopped mid-page: park the rest, because the list id continues after
           // the whole page and would skip every message still sitting here.
-          return { messages, cursor: park(listId, pending) };
+          return { messages, cursor: park(listId, pending, next) };
         }
         messages.push(header(pending.shift()));
+      }
+      if (messages.length >= limit) {
+        return { messages, cursor: listId || (next ? park(null, [], next) : null) };
+      }
+      if (!pending.length && !listId && next) {
+        const continuation = await next();
+        absorb(continuation);
+        continue;
       }
       if (messages.length >= limit || !listId) {
         // Nothing left over, so Thunderbird's own id is the cursor; when the list
         // is spent there is no id and the walk is over.
-        return { messages, cursor: listId };
+        return { messages, cursor: listId || (next ? park(null, [], next) : null) };
       }
       absorb(await browser.messages.continueList(listId));
       if (!pending.length) {
@@ -181,26 +192,50 @@
 
   const SORTED_PAGE_SIZE = 500;
 
-  /**
-   * Run a query to the end and hand back every match as one page, by date.
-   *
-   * `messages.query` has no sort option: it answers folder by folder, in storage
-   * order, so the newest match can sit on the last page. The only way to put it
-   * first is to collect them all. The page carries no id, so `collectPage` parks
-   * whatever the limit leaves over and pages through that.
-   */
-  async function sortedQuery(query, newestFirst) {
-    // ponytail: holds every match in memory; a search matching tens of thousands
-    // of messages is slow here — pass sort "none" for storage order.
+  async function collectAll(query) {
     let page = await startQuery(Object.assign({}, query, { messagesPerPage: SORTED_PAGE_SIZE }));
     const all = [...((page && page.messages) || [])];
     while (page && page.id) {
       page = await browser.messages.continueList(page.id);
       all.push(...((page && page.messages) || []));
     }
-    const time = (message) => (message.date ? new Date(message.date).getTime() : 0);
-    all.sort((a, b) => (newestFirst ? time(b) - time(a) : time(a) - time(b)));
-    return { messages: all };
+    return all;
+  }
+
+  const time = (message) => (message.date ? new Date(message.date).getTime() : 0);
+  const WINDOW_DAYS = [1, 7, 30, 365, null];
+
+  async function sortedQuery(query, compare, limit, newestFirst = false, anchor = Date.now(),
+    bounds = { lower: query.fromDate ? new Date(query.fromDate).getTime() : -Infinity,
+      upper: query.toDate ? new Date(query.toDate).getTime() : Infinity }, ceiling = Infinity) {
+    if (!newestFirst) {
+      // ponytail: oldest and non-date sorts hold every match in memory; add
+      // windowing for oldest if it ever times out.
+      const messages = await collectAll(query);
+      messages.sort(compare);
+      return { messages };
+    }
+    const lower = query.fromDate ? new Date(query.fromDate).getTime() : -Infinity;
+    const upper = query.toDate ? new Date(query.toDate).getTime() : Infinity;
+    for (const days of WINDOW_DAYS) {
+      const boundary = days === null ? lower : Math.max(lower, anchor - days * 86400000);
+      if (boundary > upper) continue;
+      const windowQuery = { ...query };
+      if (Number.isFinite(boundary)) windowQuery.fromDate = new Date(boundary - 1).toISOString();
+      const messages = (await collectAll(windowQuery)).filter((message) =>
+        time(message) >= boundary && time(message) <= Math.min(upper, ceiling) &&
+        time(message) > bounds.lower && time(message) < bounds.upper
+      );
+      if (messages.length >= limit || days === null || boundary === lower) {
+        messages.sort(compare);
+        const next = Number.isFinite(boundary) && boundary > lower
+          ? () => sortedQuery({ ...query, toDate: new Date(Math.min(upper, boundary + 1)).toISOString() },
+              compare, limit, true, boundary - 1, bounds, boundary - 1)
+          : null;
+        return { messages, next };
+      }
+    }
+    return { messages: [] };
   }
 
   /** A folder or account id, or a list of them, as a list — or null for neither. */
@@ -238,7 +273,10 @@
     query.messagesPerPage = limit;
     const sort = params.sort || "newest";
     const start =
-      sort === "none" ? () => startQuery(query) : () => sortedQuery(query, sort === "newest");
+      sort === "none" ? () => startQuery(query) : () => sortedQuery(
+        query, (a, b) => sort === "newest" ? time(b) - time(a) : time(a) - time(b), limit,
+        sort === "newest"
+      );
 
     const paged = await collectPage(params.cursor, start, limit);
     const result = { messages: paged.messages, cursor: paged.cursor };
@@ -259,18 +297,54 @@
   });
 
   tbxRegistry.define("messages.list", async (params) => {
-    const folderId = tbxUtil.need(params, "folderId", "string");
+    const folderId = params.folderId;
+    const specialUse = params.specialUse;
+    if (Boolean(folderId) === Boolean(specialUse)) {
+      throw tbxError.usage("give exactly one of folderId or specialUse");
+    }
+    if (folderId && typeof folderId !== "string") throw tbxError.usage("folderId must be a string");
+    const types = ["inbox", "drafts", "sent", "trash", "templates", "archives", "junk"];
+    if (specialUse && !types.includes(specialUse)) {
+      throw tbxError.usage(`specialUse must be one of ${types.join(", ")}`);
+    }
+    const sortTypes = ["date", "subject", "author", "size", "read", "flagged"];
+    const sortType = params.sortType || "date";
+    if (!sortTypes.includes(sortType)) {
+      throw tbxError.usage(`sortType must be one of ${sortTypes.join(", ")}`);
+    }
+    const sortOrder = params.sortOrder || "descending";
+    if (sortOrder !== "descending" && sortOrder !== "ascending") {
+      throw tbxError.usage("sortOrder must be descending or ascending");
+    }
     const limit = params.limit || DEFAULT_LIMIT;
+    let type = specialUse;
+    if (folderId && !params.cursor) {
+      const folder = await browser.folders.get(folderId);
+      if (folder && folder.isUnified) type = folder.specialUse?.[0];
+    }
+    const folderIds = type
+      ? (await browser.folders.query({ specialUse: [type], isUnified: false })).map((folder) => folder.id)
+      : [folderId];
+    const descending = sortOrder === "descending";
+    const compare = (a, b) => {
+      const value = (m) => sortType === "date" ? time(m)
+        : sortType === "subject" || sortType === "author" ? String(m[sortType] || "")
+        : sortType === "read" || sortType === "flagged" ? Number(Boolean(m[sortType]))
+        : Number(m.size || 0);
+      const left = value(a), right = value(b);
+      const order = typeof left === "string" ? left.localeCompare(right) : left - right;
+      return (descending ? -order : order) || time(b) - time(a);
+    };
+    const query = { folderId: folderIds.length === 1 ? folderIds[0] : folderIds,
+      includeSubFolders: false };
     const paged = await collectPage(
       params.cursor,
-      () =>
-        browser.messages.list(folderId, {
-          sortType: params.sortType || "date",
-          sortOrder: params.sortOrder || "descending",
-        }),
+      () => folderIds.length ? sortedQuery(query, compare, limit, sortType === "date" && descending)
+        : { messages: [] },
       limit
     );
-    return { messages: paged.messages, cursor: paged.cursor, folderId };
+    return { messages: paged.messages, cursor: paged.cursor,
+      ...(!params.cursor ? { folderId, folderIds } : {}) };
   });
 
   // ---------------------------------------------------------------------- read

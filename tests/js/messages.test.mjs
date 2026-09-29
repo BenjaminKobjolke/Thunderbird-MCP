@@ -37,9 +37,9 @@ function sample(count, folderId = FOLDER) {
  * The real registry.js supplies tbxError and tbxUtil so failures carry the same
  * shape the daemon sees; tbxRegistry is faked only to catch the definitions.
  */
-function loadHandlers(messages) {
+function loadHandlers(messages, folders = []) {
   const registry = loadScript("background/registry.js");
-  const browser = fakeBrowser();
+  const browser = fakeBrowser({ folders });
   const handlers = new Map();
   browser.messages = messages;
   loadScript("background/handlers/messages.js", {
@@ -75,6 +75,36 @@ function usageError(pattern) {
 }
 
 describe("messages.query", () => {
+  it("limits a newest search to a recent date window", async () => {
+    const now = Date.now();
+    const recent = sample(3).map((m, i) => ({ ...m, date: now - i * 1000 }));
+    const old = sample(30).map((m, i) => ({ ...m, id: 200 + i }));
+    const messages = fakeMessages({ folders: { [FOLDER]: [...old, ...recent] } });
+    const query = loadHandlers(messages).get("messages.query");
+    assert.deepEqual(ids(await query({ query: { subject: "Re" }, limit: 2 })), [100, 101]);
+    assert.ok(messages.calls.some((call) => call.method === "query" && call.args[0].fromDate));
+  });
+
+  it("pages past date windows without skipping their boundaries", async () => {
+    const now = Date.now();
+    const day = 86400000;
+    const dates = [now, now - day, now - day - 1, now - 7 * day, now - 7 * day - 1,
+      now - 30 * day, now - 30 * day - 1, now - 365 * day, now - 365 * day - 1];
+    const data = dates.map((date, i) => ({ ...sample(1)[0], id: i + 1, date }));
+    const query = loadHandlers(fakeMessages({ folders: { [FOLDER]: data } })).get("messages.query");
+    const seen = [];
+    let cursor = null;
+    do {
+      const result = await query({ query: { folderId: FOLDER }, limit: 2, cursor });
+      seen.push(...ids(result));
+      cursor = result.cursor;
+    } while (cursor);
+    assert.deepEqual(seen, dates.map((_, i) => i + 1));
+    const bounded = await query({ query: { folderId: FOLDER,
+      fromDate: new Date(now - 7 * day - 1).toISOString(),
+      toDate: new Date(now - day).toISOString() }, limit: 9 });
+    assert.deepEqual(ids(bounded), [3, 4]);
+  });
   it("answers with the matching headers, not with a list id", async () => {
     const messages = fakeMessages({ folders: { [FOLDER]: sample(30) }, queryPageSize: 10 });
     const query = loadHandlers(messages).get("messages.query");
@@ -245,32 +275,30 @@ describe("paging", () => {
       /^tbx:[^:]+:\d+$/,
       "a part-read page needs a cursor of ours, naming this load"
     );
-    assert.match(
-      walked.cursors[1],
-      /^list-/,
-      "a page that ended on the limit leaves nothing over, so the list id will do"
-    );
+    assert.match(walked.cursors[1], /^tbx:/);
   });
 
-  it("evicts the oldest part-read page and aborts the list behind it", async () => {
+  it("evicts the oldest raw-query page and aborts its Thunderbird list", async () => {
     const messages = fakeMessages({ folders: { [FOLDER]: sample(30) }, pageSize: 10 });
-    const list = loadHandlers(messages).get("messages.list");
+    const list = loadHandlers({ ...messages,
+      query: (info) => messages.query({ ...info, messagesPerPage: 10 }),
+    }).get("messages.query");
+    const params = { query: { folderId: FOLDER }, sort: "none", limit: 3 };
     const cursors = [];
     for (let walks = 0; walks < 33; walks += 1) {
       // Each one stops 3 messages into a 10-message page and is then abandoned.
-      cursors.push((await list({ folderId: FOLDER, limit: 3 })).cursor);
+      cursors.push((await list(params)).cursor);
     }
 
-    // The fake mints list ids in order, so the first walk's list is "list-1".
     assert.deepEqual(
       messages.calls.filter((call) => call.method === "abortList").map((call) => call.args[0]),
       ["list-1"]
     );
     await assert.rejects(
-      () => list({ folderId: FOLDER, limit: 3, cursor: cursors[0] }),
+      () => list({ ...params, cursor: cursors[0] }),
       usageError(/cursor/)
     );
-    const newest = await list({ folderId: FOLDER, limit: 3, cursor: cursors.at(-1) });
+    const newest = await list({ ...params, cursor: cursors.at(-1) });
     assert.equal(newest.messages.length, 3, "the newest walk survived the eviction");
   });
 
@@ -290,7 +318,7 @@ describe("paging", () => {
 
   it("refuses a cursor of ours from a foreign load instead of trying it", async () => {
     const messages = fakeMessages({ folders: { [FOLDER]: sample(30) }, pageSize: 10 });
-    const list = loadHandlers(messages).get("messages.list");
+    const list = loadHandlers(messages).get("messages.query");
 
     await assert.rejects(
       () => list({ folderId: FOLDER, limit: 3, cursor: "tbx:zzzz:1" }),
@@ -305,11 +333,54 @@ describe("paging", () => {
 
   it("says a raw Thunderbird cursor has expired", async () => {
     const messages = fakeMessages({ folders: { [FOLDER]: sample(30) }, pageSize: 10 });
-    const list = loadHandlers(messages).get("messages.list");
+    const list = loadHandlers(messages).get("messages.query");
 
     await assert.rejects(
-      () => list({ folderId: FOLDER, limit: 3, cursor: "list-404" }),
+      () => list({ query: { folderId: FOLDER }, sort: "none", limit: 3, cursor: "list-404" }),
       usageError(/expired/)
     );
+  });
+});
+
+describe("messages.list", () => {
+  const inboxes = ["account1://Inbox", "account2://Inbox", "account3://Inbox"];
+  const folders = [
+    ...inboxes.map((id) => ({ id, specialUse: ["inbox"], isUnified: false })),
+    { id: "account1://Sent", specialUse: ["sent"], isUnified: false },
+    { id: "account1://Inbox/Child", specialUse: [], isUnified: false },
+    { id: "unified://inbox", specialUse: ["inbox"], isUnified: true },
+  ];
+
+  it("lists a folder newest first without invalid list arguments", async () => {
+    const messages = fakeMessages({ folders: { [FOLDER]: sample(3).reverse() } });
+    const list = loadHandlers(messages, folders).get("messages.list");
+    assert.deepEqual(ids(await list({ folderId: FOLDER, limit: 3 })), [100, 101, 102]);
+    assert.equal(messages.calls.some((call) => call.method === "list" && call.args.length > 1), false);
+  });
+
+  it("combines inboxes and resolves a unified inbox", async () => {
+    const now = Date.now();
+    const data = Object.fromEntries(inboxes.map((id, i) => [id, [{ ...sample(1, id)[0], id: i + 1, date: now - i * 1000 }] ]));
+    data["account1://Sent"] = [{ ...sample(1)[0], id: 90, date: now + 1000 }];
+    data["account1://Inbox/Child"] = [{ ...sample(1)[0], id: 91, date: now + 1000 }];
+    const list = loadHandlers(fakeMessages({ folders: data }), folders).get("messages.list");
+    assert.deepEqual(ids(await list({ specialUse: "inbox", limit: 2 })), [1, 2]);
+    assert.deepEqual(ids(await list({ folderId: "unified://inbox", limit: 2 })), [1, 2]);
+    await assert.rejects(() => list({}), usageError(/folderId|specialUse/));
+    await assert.rejects(() => list({ folderId: FOLDER, specialUse: "inbox" }), usageError(/folderId|specialUse/));
+  });
+
+  it("sorts subjects and ascending dates", async () => {
+    const data = sample(3).map((m, i) => ({ ...m, subject: ["Z", "A", "M"][i] }));
+    const list = loadHandlers(fakeMessages({ folders: { [FOLDER]: data } }), folders).get("messages.list");
+    assert.deepEqual(ids(await list({ folderId: FOLDER, sortType: "subject", limit: 3 })), [100, 102, 101]);
+    assert.deepEqual(ids(await list({ folderId: FOLDER, sortOrder: "ascending", limit: 3 })), [102, 101, 100]);
+  });
+
+  it("rejects unknown sort and special-use values with the accepted options", async () => {
+    const list = loadHandlers(fakeMessages({ folders: { [FOLDER]: sample(1) } }), folders).get("messages.list");
+    await assert.rejects(() => list({ folderId: FOLDER, sortType: "sizes" }), usageError(/date, subject, author/));
+    await assert.rejects(() => list({ folderId: FOLDER, sortOrder: "DESC" }), usageError(/descending or ascending/));
+    await assert.rejects(() => list({ specialUse: "outbox" }), usageError(/inbox, drafts/));
   });
 });

@@ -30,12 +30,13 @@ Parameters: full_text, subject, author, recipients, body, folder_id, account_id,
 
 ### `mail_list` · read
 
-List messages in one folder, newest first by default.
+List one folder or every folder of a type, newest first by default.
 
-Use `folder_list` to discover folder ids. For anything selective, prefer
-`mail_search`.
+`special_use="inbox"` lists the newest messages of every account's inbox
+in one call — the answer to "what is my newest email". Use `folder_list`
+to discover one folder's id. For selective queries, use `mail_search`.
 
-Parameters: **folder_id**, limit, cursor, sort_by, descending  
+Parameters: folder_id, limit, cursor, sort_by, descending, special_use  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `mail_get` · read
@@ -195,8 +196,8 @@ Parameters: **folder_id**
 
 Get the unified folder that spans every account, e.g. all inboxes at once.
 
-Its id works anywhere a folder id is accepted, so `mail_list` on the unified
-inbox lists new mail across all accounts in one call.
+Its id works with `mail_list`. For one call that finds and lists all inboxes,
+use `mail_list(special_use="inbox")`.
 
 Parameters: **folder_type**, include_subfolders  
 *(bold means required; `confirm` is the confirmation gate)*

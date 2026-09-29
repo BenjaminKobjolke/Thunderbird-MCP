@@ -197,6 +197,9 @@ def message_summary(message: dict[str, Any]) -> dict[str, Any]:
         "folderId": (message.get("folder") or {}).get("id")
         if isinstance(message.get("folder"), dict)
         else message.get("folderId"),
+        "folderPath": (message.get("folder") or {}).get("path")
+        if isinstance(message.get("folder"), dict)
+        else message.get("folderPath"),
         "read": message.get("read"),
         "flagged": message.get("flagged"),
         "junk": message.get("junk"),
