@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.1 — 2026-09-29
 
 ### Added
 
@@ -11,6 +11,10 @@
 
 ### Fixed
 
+- `tbmcp doctor` and `tb_status` compare the installed add-on build with the package,
+  so an add-on left over from before a code change is reported even when the version did not change.
+- Date-filtered mail listing and search pass `Date` values to Thunderbird's query API;
+  ISO date strings had made newest-first queries time out on the live add-on.
 - `mail_list` no longer passes unsupported sort arguments to Thunderbird's `messages.list`.
   Newest-first mail search and listing stop after a recent date window has enough matches.
 - `mail_save_attachment` failed for every attachment with "atob is not defined".
