@@ -44,6 +44,8 @@ Only after something under `addon/` changes. Python-only changes (`src/tbmcp/`) 
 effect with an editable install as soon as the MCP server restarts.
 After any change under `addon/`, rerun `tbmcp install-addon`; `doctor` and `tb_status`
 flag an installed build that differs from the current source.
+`tools\install_addon.bat` runs `install-addon --yes` and `doctor` in one step from
+any folder or as a Tickets Watcher command.
 
 ## Automatic install
 
@@ -51,3 +53,5 @@ Without `--manual`, `install-addon` installs the package itself and restarts
 Thunderbird once (it asks first; `--yes` skips the prompt, `--no-restart` leaves
 Thunderbird closed). Pass `--profile <name or directory>` for a non-default profile,
 e.g. a portable install.
+The batch file uses the default profile; run the command by hand for a non-default
+profile.

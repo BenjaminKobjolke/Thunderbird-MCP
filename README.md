@@ -336,6 +336,7 @@ node --test "tests/js/*.test.mjs"       # 111 add-on tests under node:vm
 ruff check . && ruff format --check .
 python tools/check_consistency.py       # the three layers still agree
 python tools/smoke_search.py            # live acceptance, against a running Thunderbird
+tools\install_addon.bat                 # after addon/ changes: build, install, restart Thunderbird, doctor
 ```
 
 The add-on's real scripts run under `node:vm` against fakes of the WebExtension and
