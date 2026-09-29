@@ -4,8 +4,9 @@ All 112 tools, generated from the code by `tools/gen_tool_reference.py`.
 Do not edit by hand.
 
 `read` tools cannot change anything and are the only ones registered under
-`--read-only`. `write` and `destructive` tools require confirmation — an explicit
-`confirm=true`, or an approval prompt where the client supports one.
+`--read-only`. By default, `write` and `destructive` tools require confirmation —
+an explicit `confirm=true`, or an approval prompt where the client supports one.
+[Folder rules](FOLDER-RULES.md) can skip confirmation for selected calls.
 
 ## `mail` — 15 tools *(in the default toolset)*
 
@@ -97,6 +98,7 @@ Move messages into another folder.
 
 On IMAP the move is asynchronous — the tool waits for Thunderbird to confirm
 before returning, so a following search reflects the change.
+Moves allowed in the tbmcp config skip confirmation.
 
 Parameters: **message_ids**, **destination_folder_id**, confirm, dry_run_only  
 *(bold means required; `confirm` is the confirmation gate)*
@@ -203,12 +205,16 @@ Parameters: **folder_type**, include_subfolders
 
 Create a folder inside another folder, or at the top of an account.
 
+Folders allowed in the tbmcp config skip confirmation.
+
 Parameters: **name**, parent_id, account_id, confirm  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `folder_rename` · write
 
 Rename a folder, keeping its messages and subfolders.
+
+Folders allowed in the tbmcp config skip confirmation.
 
 Parameters: **folder_id**, **new_name**, confirm  
 *(bold means required; `confirm` is the confirmation gate)*
@@ -238,6 +244,7 @@ Delete a folder, its subfolders and every message in them.
 Thunderbird moves the folder to Trash unless it is already inside Trash, in
 which case it goes for good. Check `folder_get` first if the count matters —
 the reply reports what was removed, but cannot put it back.
+Empty subfolders allowed in the tbmcp config skip confirmation.
 
 Parameters: **folder_id**, confirm, dry_run_only  
 *(bold means required; `confirm` is the confirmation gate)*

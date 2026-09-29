@@ -17,7 +17,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tbmcp.cli import _doctor_ok, build_parser, cmd_doctor
+from tbmcp.cli import _doctor_ok, _settings_from_args, build_parser, cmd_doctor
 from tbmcp.profile import ThunderbirdProfile
 
 # ------------------------------------------------------------------- _doctor_ok
@@ -81,8 +81,22 @@ def _clean_tbmcp_env(monkeypatch):
         "TBMCP_TIMEOUT",
         "TBMCP_NO_AUTOSTART",
         "TBMCP_TOOLS",
+        "TBMCP_CONFIG",
     ):
         monkeypatch.delenv(var, raising=False)
+
+
+@pytest.mark.usefixtures("_clean_tbmcp_env")
+def test_config_flag_overrides_environment_and_skips_invalid_default(tmp_path, monkeypatch):
+    default = tmp_path / "default.toml"
+    default.write_text("[[folders]\n")
+    chosen = tmp_path / "chosen.toml"
+    chosen.write_text('[[folders]]\npath = "/@BKToDo"\nallow = ["move_in"]\n')
+    monkeypatch.setenv("TBMCP_CONFIG", str(default))
+    args = build_parser().parse_args(["serve", "--config", str(chosen)])
+    assert _settings_from_args(args).folder_rules[0].path == "/@BKToDo"
+    with pytest.raises(SystemExit):
+        _settings_from_args(build_parser().parse_args(["serve"]))
 
 
 def _stub_common(

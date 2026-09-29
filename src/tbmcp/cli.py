@@ -18,6 +18,7 @@ import sys
 import textwrap
 import time
 from collections.abc import Sequence
+from pathlib import Path
 
 from .config import ALL_TOOLSETS, Settings, parse_toolsets
 from .handshake import describe_handshake
@@ -63,7 +64,8 @@ def _attach_log_file(path) -> None:
 
 
 def _settings_from_args(args: argparse.Namespace) -> Settings:
-    settings = Settings.from_env()
+    config = getattr(args, "config", None)
+    settings = Settings.from_env(Path(config) if config is not None else None)
     toolsets = parse_toolsets(args.toolsets) if getattr(args, "toolsets", None) else None
     return settings.merged_with(
         toolsets=toolsets,
@@ -539,6 +541,7 @@ def build_parser() -> argparse.ArgumentParser:
             help="let mail_send actually send instead of drafting by default",
         )
         sub.add_argument("--timeout", type=float, help="per-call timeout in seconds (default 30)")
+        sub.add_argument("--config", help="folder rules file (default: <state dir>/config.toml)")
 
     serve = subparsers.add_parser("serve", help="run the MCP server (default)")
     add_common(serve)

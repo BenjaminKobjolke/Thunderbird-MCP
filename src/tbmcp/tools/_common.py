@@ -23,6 +23,8 @@ from typing import Any
 
 from ..bridge import shared_bridge
 from ..errors import UsageError
+from ..policy import allows, grants
+from ..safety import current_settings
 
 log = logging.getLogger("tbmcp.tools")
 
@@ -43,6 +45,67 @@ async def call(
 
 async def status() -> dict[str, Any]:
     return await shared_bridge().status()
+
+
+async def policy_allows(
+    action: str, folder_id: str | None, *, strictly_below: bool = False, need_empty: bool = False
+) -> bool:
+    """Allow a folder action only after checking the live folder and its rule."""
+    rules = current_settings().folder_rules
+    if not rules or not folder_id:
+        return False
+    try:
+        result = await call("folders.get", {"folderId": folder_id, "includeSubFolders": need_empty})
+        folder = result.get("folder") if isinstance(result, dict) else None
+        if not isinstance(folder, dict) or not allows(
+            rules, action, folder, strictly_below=strictly_below
+        ):
+            return False
+        if not need_empty:
+            return True
+        count = folder.get("totalMessageCount")
+        if type(count) is not int or count != 0 or folder.get("children"):
+            return False
+        listing = await call("messages.list", {"folderId": folder_id, "limit": 1})
+        return isinstance(listing, dict) and listing.get("messages") == []
+    except Exception:
+        log.warning("Folder policy lookup failed for %s", folder_id, exc_info=True)
+        return False
+
+
+async def policy_allows_mail_move(message_ids: list[int], destination_folder_id: str) -> bool:
+    """Allow moving into a ruled folder or moving every message out of one."""
+    rules = current_settings().folder_rules
+    if not rules or not message_ids:
+        return False
+    if await policy_allows("move_in", destination_folder_id):
+        return True
+    if not grants(rules, "move_out"):
+        return False
+    try:
+        result = await call("messages.readMany", {"messageIds": message_ids, "detail": "summary"})
+        if not isinstance(result, dict) or result.get("failures") != []:
+            return False
+        messages = result.get("messages")
+        if not isinstance(messages, list) or len(messages) != len(message_ids):
+            return False
+        headers = [item.get("header") for item in messages if isinstance(item, dict)]
+        if len(headers) != len(message_ids) or any(not isinstance(h, dict) for h in headers):
+            return False
+        if {h.get("id") for h in headers} != set(message_ids):
+            return False
+        folders = [h.get("folderId") for h in headers]
+        for folder_id in folders:
+            if (
+                not isinstance(folder_id, str)
+                or not folder_id
+                or not await policy_allows("move_out", folder_id)
+            ):
+                return False
+        return True
+    except Exception:
+        log.warning("Mail move policy lookup failed", exc_info=True)
+        return False
 
 
 # ------------------------------------------------------------------------ inputs

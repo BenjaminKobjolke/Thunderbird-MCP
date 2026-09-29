@@ -66,12 +66,15 @@ Zed. Use `python -m tbmcp serve` as the command, with an absolute interpreter pa
 
 ## Safety
 
-Reads are unrestricted. Anything that sends, deletes or changes configuration needs
+Reads are unrestricted. By default, anything that sends, deletes or changes configuration needs
 `confirm=true`, carries `destructiveHint`, and prompts for approval on clients that
 support elicitation. `mail_send` drafts unless told `mode="send"`; `dry_run_only`
 previews a write; preference writes are allowlisted and credentials, proxy and
 security prefs are refused at both layers. `--read-only` registers no mutating tool
 at all.
+
+To allow selected moves and folder changes without confirmation, configure
+[folder rules](docs/FOLDER-RULES.md).
 
 ## Toolsets
 

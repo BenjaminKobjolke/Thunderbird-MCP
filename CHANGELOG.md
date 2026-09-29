@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Folder rules in `config.toml` (`TBMCP_CONFIG` or `--config`) let `mail_move`,
+  `folder_create`, `folder_rename`, and `folder_delete` (empty subfolders only)
+  run without confirmation inside chosen folders, so headless agents can triage mail.
+
 ### Fixed
 
 - `mail_save_attachment` failed for every attachment with "atob is not defined".

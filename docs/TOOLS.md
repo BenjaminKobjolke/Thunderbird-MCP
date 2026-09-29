@@ -27,7 +27,7 @@ settings 11, admin 7. `tbmcp tools --toolsets all` prints the live list.
 | `mail_attachments` | `messages.listAttachments` | |
 | `mail_save_attachment` | `messages.saveAttachment` → `x.files.write` | writes to disk |
 | `mail_mark` | `messages.mark` | read/flagged/junk/tags; no confirmation |
-| `mail_move` | `messages.move` | gated; reports source folders |
+| `mail_move` | `messages.move` | gated; folder config rules can skip confirmation; reports source folders |
 | `mail_copy` | `messages.copy` | gated |
 | `mail_archive` | `messages.archive` | gated |
 | `mail_delete` | `messages.delete` | gated, `DESTRUCTIVE`, `permanent` flag |
@@ -42,11 +42,11 @@ settings 11, admin 7. `tbmcp tools --toolsets all` prints the live list.
 | `folder_list` | `folders.query` — tree or flat, with counts |
 | `folder_get` | `folders.get` — one folder plus `MailFolderInfo` |
 | `folder_capabilities` | `folders.capabilities` — can it hold messages, be renamed… |
-| `folder_create` | `folders.create` (gated) |
-| `folder_rename` | `folders.rename` (gated) |
+| `folder_create` | `folders.create` (gated; folder config rules can skip confirmation) |
+| `folder_rename` | `folders.rename` (gated; folder config rules can skip confirmation) |
 | `folder_move` | `folders.move` (gated) |
 | `folder_copy` | `folders.copy` (gated) |
-| `folder_delete` | `folders.delete` (gated, destructive) |
+| `folder_delete` | `folders.delete` (gated, destructive; folder config rules can skip confirmation for empty subfolders) |
 | `folder_mark_read` | `folders.markAsRead` (gated) |
 | `folder_set_favorite` | `folders.update` |
 | `folder_empty_trash` | `folders.emptyTrash` (gated, destructive) |

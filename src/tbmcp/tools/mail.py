@@ -13,6 +13,7 @@ return envelope.
 from typing import Any, Literal
 
 from ..errors import UsageError
+from ..policy import grants
 from ..safety import (
     DESTRUCTIVE,
     IDEMPOTENT_WRITE,
@@ -325,18 +326,23 @@ def register(reg: Registrar) -> None:
             "failures": result.get("failures") or [],
         }
 
-    @reg.write_tool(title="Move messages", annotations=MUTATING)
+    @reg.write_tool(
+        title="Move messages",
+        annotations=MUTATING,
+        interactive=not grants(reg.settings.folder_rules, "move_in", "move_out"),
+    )
     async def mail_move(
         message_ids: list[int],
         destination_folder_id: str,
         confirm: bool = False,
-        consent: Gate("move these messages to another folder") = None,  # type: ignore[valid-type]
+        consent: Gate("move these messages to another folder", move_policy=True) = None,  # type: ignore[valid-type]
         dry_run_only: bool = False,
     ) -> dict[str, Any]:
         """Move messages into another folder.
 
         On IMAP the move is asynchronous — the tool waits for Thunderbird to confirm
         before returning, so a following search reflects the change.
+        Moves allowed in the tbmcp config skip confirmation.
         """
         guard_write("move messages")
         ids = require_ids(message_ids)

@@ -11,6 +11,7 @@ import pytest
 from mcp import Client
 
 from tbmcp.config import Settings
+from tbmcp.policy import FolderRule
 from tbmcp.server import build_server
 
 pytestmark = pytest.mark.anyio
@@ -215,6 +216,96 @@ async def test_move_reports_the_source_folders(fake_bridge) -> None:
     assert payload["current"]["folderId"] == "account1://Archive"
     assert "re-query" in payload["note"]
     assert bridge.params_for("messages.move")["destinationFolderId"] == "account1://Archive"
+
+
+@pytest.mark.parametrize(
+    ("action", "destination", "sources", "allowed"),
+    [
+        ("move_in", "/@BKToDo/new", None, True),
+        ("move_in", "/Inbox", None, False),
+        ("move_out", "/Inbox", ["/@BKToDo/a", "/@BKToDo/b"], True),
+        ("move_out", "/Inbox", ["/@BKToDo/a", "/Outside"], False),
+    ],
+)
+async def test_move_folder_rules(fake_bridge, action, destination, sources, allowed) -> None:
+    responses = {
+        "folders.get": lambda params: {
+            "folder": {
+                "path": destination
+                if params["folderId"] == "dest"
+                else {"src1": sources[0], "src2": sources[1]}[params["folderId"]],
+                "accountId": "account1",
+            }
+        },
+        "messages.readMany": {
+            "messages": [
+                {"header": {"id": 1, "folderId": "src1"}},
+                {"header": {"id": 2, "folderId": "src2"}},
+            ],
+            "failures": [],
+        },
+    }
+    bridge = fake_bridge(responses)
+    rules = (FolderRule("/@BKToDo", frozenset({action})),)
+    async with Client(_server(bridge, folder_rules=rules)) as client:
+        result = await client.call_tool(
+            "mail_move", {"message_ids": [1, 2], "destination_folder_id": "dest"}
+        )
+    assert (not result.is_error) is allowed, _text(result)
+    assert ("messages.move" in bridge.methods()) is allowed
+    if action == "move_in":
+        assert "messages.readMany" not in bridge.methods()
+
+
+@pytest.mark.parametrize(
+    "read_result",
+    [
+        {"messages": [{"header": {"id": 1, "folderId": "src1"}}], "failures": []},
+        {
+            "messages": [
+                {"header": {"id": 1, "folderId": "src1"}},
+                {"header": {"id": 2, "folderId": "src2"}},
+            ],
+            "failures": [2],
+        },
+        {
+            "messages": [{"header": {"id": 1, "folderId": "src1"}}, {"header": {"id": 2}}],
+            "failures": [],
+        },
+        {
+            "messages": [
+                {"header": {"id": 1, "folderId": "src1"}},
+                {"header": {"id": 3, "folderId": "src2"}},
+            ],
+            "failures": [],
+        },
+    ],
+)
+async def test_move_out_requires_complete_source_lookup(fake_bridge, read_result) -> None:
+    bridge = fake_bridge(
+        {
+            "folders.get": {"folder": {"path": "/Outside", "accountId": "account1"}},
+            "messages.readMany": read_result,
+        }
+    )
+    rules = (FolderRule("/@BKToDo", frozenset({"move_out"})),)
+    async with Client(_server(bridge, folder_rules=rules)) as client:
+        result = await client.call_tool(
+            "mail_move", {"message_ids": [1, 2], "destination_folder_id": "dest"}
+        )
+    assert result.is_error
+    assert "messages.move" not in bridge.methods()
+
+
+async def test_move_without_rules_needs_confirmation_without_policy_reads(fake_bridge) -> None:
+    bridge = fake_bridge()
+    async with Client(_server(bridge)) as client:
+        result = await client.call_tool(
+            "mail_move", {"message_ids": [1], "destination_folder_id": "dest"}
+        )
+    assert result.is_error
+    assert "NEEDS_CONFIRMATION" in _text(result)
+    assert bridge.calls == []
 
 
 async def test_body_is_truncated_rather_than_dropped(fake_bridge) -> None:
