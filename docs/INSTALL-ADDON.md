@@ -13,7 +13,7 @@ README: `uv venv && uv pip install -e ".[dev]"`). Run them from the clone root.
 ```
 
 It prints the path of the built package, e.g.
-`C:\Users\<you>\AppData\Local\tbmcp\addon\tbmcp-bridge-1.3.0-5becf2b5a8a9.xpi`.
+`C:\Users\<you>\AppData\Local\tbmcp\addon\tbmcp-bridge-1.3.1-5becf2b5a8a9.xpi`.
 The suffix is a hash of the add-on contents, so the same name means an identical
 add-on.
 
@@ -36,12 +36,14 @@ Installing over an existing version replaces it; no need to remove the old one f
 ```
 
 `doctor` reports the installed add-on version against the one in this clone and
-warns if Thunderbird is running an older build.
+warns if Thunderbird is running an older build, even if its version matches.
 
 ## When to reinstall
 
 Only after something under `addon/` changes. Python-only changes (`src/tbmcp/`) take
 effect with an editable install as soon as the MCP server restarts.
+After any change under `addon/`, rerun `tbmcp install-addon`; `doctor` and `tb_status`
+flag an installed build that differs from the current source.
 
 ## Automatic install
 

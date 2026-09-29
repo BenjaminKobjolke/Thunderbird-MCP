@@ -12,11 +12,13 @@ chain (new breakage #4).
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from types import SimpleNamespace
 
 import pytest
 
+from tbmcp.addon_build import addon_id, build_xpi, source_digest
 from tbmcp.cli import _doctor_ok, _settings_from_args, build_parser, cmd_doctor
 from tbmcp.profile import ThunderbirdProfile
 
@@ -311,6 +313,8 @@ def test_the_json_report_compares_the_installed_add_on_with_the_source(
         "installed": "1.2.0",
         "live": None,
         "source": "1.3.0",
+        "installedBuild": None,
+        "sourceBuild": source_digest(),
         "mismatch": True,
     }
     assert exit_code == 1
@@ -328,7 +332,7 @@ def test_an_out_of_date_add_on_is_named_with_its_remedy(monkeypatch, tmp_path, c
 
     out = capsys.readouterr().out
     assert "add-on version (installed)" in out
-    assert "installed add-on is 1.2.0, source is 1.3.0" in out
+    assert "installed add-on is 1.2.0 (build unknown), source is 1.3.0 (build" in out
     assert "tbmcp install-addon" in out
     assert exit_code == 1
 
@@ -350,7 +354,7 @@ def test_a_working_chain_on_an_older_add_on_is_a_warning_not_a_failure(
     )
 
     out = capsys.readouterr().out
-    assert "Warning: installed add-on is 1.2.0, source is 1.3.0" in out
+    assert "Warning: installed add-on is 1.2.0 (build unknown), source is 1.3.0 (build" in out
     assert exit_code == 0
 
 
@@ -447,8 +451,47 @@ def test_a_stale_addon_is_named_even_while_thunderbird_is_closed(monkeypatch, tm
 
     out = capsys.readouterr().out
     assert "Thunderbird is not running" in out
-    assert "installed add-on is 1.2.0, source is 1.3.0" in out
+    assert "installed add-on is 1.2.0 (build unknown), source is 1.3.0 (build" in out
     assert "tbmcp install-addon" in out
+
+
+@pytest.mark.usefixtures("_clean_tbmcp_env")
+@pytest.mark.parametrize("installed", ["stale", "matching", "missing"])
+def test_doctor_detects_same_version_stale_build(monkeypatch, tmp_path, capsys, installed):
+    (tmp_path / "profile").mkdir()
+    profile = _profile(tmp_path / "profile", {**_ADDON_STATUS, "addonVersion": "1.3.0"})
+    if installed != "missing":
+        extensions = profile.path / "extensions"
+        extensions.mkdir()
+        xpi = build_xpi(tmp_path / "package")
+        target = extensions / f"{addon_id()}.xpi"
+        shutil.copyfile(xpi, target)
+        if installed == "stale":
+            import zipfile
+
+            with zipfile.ZipFile(target, "a") as zf:
+                zf.writestr("changed.js", "// stale")
+    _run_doctor(
+        monkeypatch,
+        ["--json"],
+        bridge_status={"connected": True, "thunderbird": {"addonVersion": "1.3.0"}},
+        addon_summary={"addonVersion": "1.3.0", "thunderbirdRunning": True},
+        profile=profile,
+    )
+    report = json.loads(capsys.readouterr().out)
+    assert report["addonVersions"]["mismatch"] is (installed == "stale")
+    assert report["addonVersions"]["sourceBuild"] == source_digest()
+    assert bool(report["addonVersions"]["installedBuild"]) is (installed != "missing")
+    _run_doctor(
+        monkeypatch,
+        [],
+        bridge_status={"connected": True, "thunderbird": {"addonVersion": "1.3.0"}},
+        addon_summary={"addonVersion": "1.3.0", "thunderbirdRunning": True},
+        profile=profile,
+    )
+    text = capsys.readouterr().out
+    assert ("Warning: installed add-on is" in text) is (installed == "stale")
+    assert "add-on build (installed)" in text
 
 
 @pytest.mark.usefixtures("_clean_tbmcp_env")

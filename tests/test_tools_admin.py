@@ -9,11 +9,13 @@ add-on was dialling in twice a minute and failing the handshake every time.
 
 from __future__ import annotations
 
+import shutil
 import time
 
 import pytest
 from mcp import Client
 
+from tbmcp.addon_build import addon_id, build_xpi
 from tbmcp.config import Settings
 from tbmcp.server import build_server
 
@@ -95,6 +97,38 @@ async def test_tb_status_survives_a_daemon_too_old_to_report_handshakes(fake_bri
     payload = result.structured_content
     assert payload["handshake"] is None
     assert "Ask the user to start Thunderbird" in payload["hint"]
+
+
+@pytest.mark.parametrize("installed", ["stale", "matching", "missing"])
+async def test_tb_status_reports_stale_build(fake_bridge, tmp_path, installed) -> None:
+    status = _daemon_status(None)
+    status["connected"] = True
+    status["thunderbird"] = {"addonVersion": "1.3.0", "experiment": True}
+    status["profile"]["path"] = str(tmp_path)
+    if installed != "missing":
+        extensions = tmp_path / "extensions"
+        extensions.mkdir()
+        target = extensions / f"{addon_id()}.xpi"
+        shutil.copyfile(build_xpi(tmp_path / "package"), target)
+        if installed == "stale":
+            import zipfile
+
+            with zipfile.ZipFile(target, "a") as zf:
+                zf.writestr("changed.js", "// stale")
+    bridge = fake_bridge({"daemon.status": status})
+    async with Client(_server(bridge)) as client:
+        payload = (await client.call_tool("tb_status", {})).structured_content
+    assert payload["addonBuild"]["stale"] is (installed == "stale")
+    assert ("tbmcp install-addon" in payload.get("hint", "")) is (installed == "stale")
+
+
+async def test_tb_status_without_profile_omits_build(fake_bridge) -> None:
+    status = _daemon_status(None)
+    status["profile"] = None
+    bridge = fake_bridge({"daemon.status": status})
+    async with Client(_server(bridge)) as client:
+        payload = (await client.call_tool("tb_status", {})).structured_content
+    assert "addonBuild" not in payload
 
 
 async def test_tb_diagnostics_carries_the_handshake_record_and_the_diagnosis(

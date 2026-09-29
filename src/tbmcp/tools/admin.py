@@ -10,8 +10,10 @@ guess at a timeout.
 # must evaluate at definition time so `Gate(...)` produces a real
 # `Annotated[Consent, Resolve(...)]` rather than a string the SDK has to re-evaluate.
 
+from pathlib import Path
 from typing import Any, Literal
 
+from ..addon_build import build_check
 from ..errors import TbmcpError
 from ..handshake import describe_handshake
 from ..safety import DESTRUCTIVE, Gate, guard_write, large_output, require
@@ -62,6 +64,19 @@ def register(reg: Registrar) -> None:
             payload["hint"] = describe_handshake(result.get("handshake")) or NOT_CONNECTED_HINT
         elif payload["privilegedHalf"] is False:
             payload["hint"] = NO_EXPERIMENT_HINT
+        profile = result.get("profile") or {}
+        if profile.get("path"):
+            try:
+                build = build_check(Path(profile["path"]))
+                payload["addonBuild"] = build
+                if build["stale"] and not payload.get("hint"):
+                    payload["hint"] = (
+                        f"The installed add-on build ({build['installed']}) differs from this "
+                        f"server's ({build['source']}): Thunderbird runs old add-on code. "
+                        "Run `tbmcp install-addon` (it restarts Thunderbird)."
+                    )
+            except OSError:
+                pass
         return payload
 
     @reg.read_tool(title="Wait for Thunderbird")

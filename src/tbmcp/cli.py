@@ -176,16 +176,19 @@ def _addon_version_check(report: dict) -> dict:
     live = ((report.get("bridge") or {}).get("thunderbird") or {}).get("addonVersion")
     source = (report.get("addon") or {}).get("addonVersion")
     running = live or installed
+    build = report.get("addonBuild") or {}
     return {
         "installed": installed,
         "live": live,
         "source": source,
-        "mismatch": bool(source and running and running != source),
+        "installedBuild": build.get("installed"),
+        "sourceBuild": build.get("source"),
+        "mismatch": bool(source and running and running != source) or bool(build.get("stale")),
     }
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    from . import addon_install
+    from . import addon_build, addon_install
     from .bridge import Bridge, set_shared_bridge
     from .ipc import DaemonInfo, daemon_log_path
     from .profile import ProfileSnapshot, find_profile, list_profiles
@@ -201,6 +204,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     profile = find_profile(settings.profile)
     report["profileSelected"] = str(profile.path) if profile else None
     if profile:
+        report["addonBuild"] = addon_build.build_check(profile.path)
         snapshot = ProfileSnapshot.load(profile)
         report["accountsOnDisk"] = len(snapshot.accounts())
         report["outgoingServersOnDisk"] = len(snapshot.outgoing_servers())
@@ -350,6 +354,8 @@ def _print_doctor(report: dict) -> None:
     line("add-on version (source)", addon.get("addonVersion"))
     versions = report.get("addonVersions") or {}
     line("add-on version (installed)", versions.get("installed") or "unknown")
+    line("add-on build (source)", versions.get("sourceBuild") or "unknown")
+    line("add-on build (installed)", versions.get("installedBuild") or "unknown")
     line("profile", report.get("profileSelected") or "NOT FOUND")
     if report.get("accountsOnDisk") is not None:
         line("accounts (from prefs.js)", report["accountsOnDisk"])
@@ -404,7 +410,12 @@ def _print_doctor(report: dict) -> None:
 
     if bridge.get("connected") and versions.get("mismatch"):
         seen = versions.get("live") or versions.get("installed")
-        print(f"\nWarning: installed add-on is {seen}, source is {versions.get('source')} — run")
+        print(
+            f"\nWarning: installed add-on is {seen} "
+            f"(build {versions.get('installedBuild') or 'unknown'}), "
+            f"source is {versions.get('source')} "
+            f"(build {versions.get('sourceBuild') or 'unknown'}) — run"
+        )
         print("         `tbmcp install-addon` and restart Thunderbird to update it.")
 
     if not bridge.get("connected"):
@@ -413,7 +424,12 @@ def _print_doctor(report: dict) -> None:
         # Thunderbird is closed, or the user starts it and is back here in a minute.
         if versions.get("mismatch"):
             seen = versions.get("live") or versions.get("installed")
-            print(f"  * The installed add-on is {seen}, source is {versions.get('source')}.")
+            print(
+                f"  * The installed add-on is {seen} "
+                f"(build {versions.get('installedBuild') or 'unknown'}), "
+                f"source is {versions.get('source')} "
+                f"(build {versions.get('sourceBuild') or 'unknown'})."
+            )
             print("    Run `tbmcp install-addon` and restart Thunderbird.")
         if not addon.get("thunderbirdRunning"):
             print("  * Thunderbird is not running — start it.")
