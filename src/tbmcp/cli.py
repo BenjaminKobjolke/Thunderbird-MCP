@@ -557,7 +557,7 @@ def build_parser() -> argparse.ArgumentParser:
             help="let mail_send actually send instead of drafting by default",
         )
         sub.add_argument("--timeout", type=float, help="per-call timeout in seconds (default 30)")
-        sub.add_argument("--config", help="folder rules file (default: <state dir>/config.toml)")
+        sub.add_argument("--config", help="folder rules file (default: <repo>/settings.json)")
 
     serve = subparsers.add_parser("serve", help="run the MCP server (default)")
     add_common(serve)

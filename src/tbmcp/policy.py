@@ -1,13 +1,11 @@
-"""Folder-scoped permissions loaded from a user's TOML file."""
+"""Folder-scoped permissions loaded from a user's JSON file."""
 
 from __future__ import annotations
 
+import json
 import os
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-
-from . import ipc
 
 ACTIONS = ("create_subfolders", "rename_subfolders", "delete_subfolders", "move_in", "move_out")
 
@@ -23,17 +21,20 @@ def load_rules(path: Path) -> tuple[FolderRule, ...]:
     if not path.exists():
         return ()
     try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
+        text = path.read_text(encoding="utf-8")
+        data = json.loads(text) if text.strip() else {}
+    except (OSError, UnicodeError, ValueError) as exc:
         raise SystemExit(f"{path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit(f"{path}: expected a JSON object")
     entries = data.get("folders", [])
     if not isinstance(entries, list):
-        raise SystemExit(f"{path}: folders must be an array of tables")
+        raise SystemExit(f"{path}: folders must be an array of objects")
     rules = []
     for number, entry in enumerate(entries, 1):
         label = f"{path}: folders[{number}]"
         if not isinstance(entry, dict):
-            raise SystemExit(f"{label}: expected a table")
+            raise SystemExit(f"{label}: expected an object")
         folder = entry.get("path")
         if not isinstance(folder, str) or not folder.strip():
             raise SystemExit(f"{label}: path must be a nonempty string")
@@ -75,5 +76,5 @@ def default_config_path() -> Path:
     return (
         Path(os.environ["TBMCP_CONFIG"])
         if os.environ.get("TBMCP_CONFIG")
-        else ipc.state_dir() / "config.toml"
+        else Path(__file__).resolve().parents[2] / "settings.json"
     )

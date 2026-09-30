@@ -6,22 +6,56 @@ from tbmcp.policy import FolderRule, allows, grants, load_rules
 
 
 def test_load_rules(tmp_path: Path):
-    assert load_rules(tmp_path / "missing.toml") == ()
-    path = tmp_path / "config.toml"
-    path.write_text('[[folders]]\npath = "@BKToDo/"\naccount = "account1"\nallow = ["move_in"]\n')
+    assert load_rules(tmp_path / "missing.json") == ()
+    path = tmp_path / "settings.json"
+    path.write_text(
+        '{"folders": [{"path": "@BKToDo/", "account": "account1", "allow": ["move_in"]}]}'
+    )
     assert load_rules(path) == (FolderRule("/@BKToDo", frozenset({"move_in"}), "account1"),)
+    path.write_text(" \n")
+    assert load_rules(path) == ()
 
     for bad, message in (
-        ('[[folders]]\npath = "/x"\nallow = ["typo"]', "typo"),
-        ('[[folders]]\nallow = ["move_in"]', "path"),
-        ("[[folders]\n", "config.toml"),
-        ('[[folders]]\npath = " "\nallow = []', "path"),
-        ('[[folders]]\npath = "/x"\nallow = "move_in"', "allow"),
-        ('[[folders]]\npath = "/x"\naccount = " "\nallow = []', "account"),
+        ('{"folders": [{"path": "/x", "allow": ["typo"]}]}', "typo"),
+        ('{"folders": [{"allow": ["move_in"]}]}', "path"),
+        ("{", "settings.json"),
+        ('{"folders": [{"path": " ", "allow": []}]}', "path"),
+        ('{"folders": [{"path": "/x", "allow": "move_in"}]}', "allow"),
+        ('{"folders": [{"path": "/x", "account": " ", "allow": []}]}', "account"),
+        ("[]", "expected a JSON object"),
     ):
         path.write_text(bad)
         with pytest.raises(SystemExit, match=message):
             load_rules(path)
+
+
+def test_example_settings_are_valid():
+    path = Path(__file__).resolve().parents[1] / "settings.example.json"
+    assert load_rules(path) == (
+        FolderRule(
+            "/@BKToDo",
+            frozenset(
+                {
+                    "create_subfolders",
+                    "rename_subfolders",
+                    "delete_subfolders",
+                    "move_in",
+                    "move_out",
+                }
+            ),
+        ),
+    )
+
+
+def test_default_config_path_is_repo_settings(monkeypatch):
+    from tbmcp.policy import default_config_path
+
+    monkeypatch.delenv("TBMCP_CONFIG", raising=False)
+    repo = Path(__file__).resolve().parents[1]
+    assert default_config_path() == repo / "settings.json"
+    custom = repo / "custom.json"
+    monkeypatch.setenv("TBMCP_CONFIG", str(custom))
+    assert default_config_path() == custom
 
 
 def test_allows_uses_segments_and_account():
