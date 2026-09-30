@@ -19,6 +19,9 @@ probe/explore.json
 probe/*.log
 *.local.json
 
+# Local folder rules; copy settings.example.json
+/settings.json
+
 # Per-plan review artifacts (subagent-driven development)
 .superpowers/
 
