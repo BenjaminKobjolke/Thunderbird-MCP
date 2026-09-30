@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- Folder rules now load from git-ignored `settings.json` in the repository root
+  (template: `settings.example.json`) instead of `config.toml` in the state directory.
+  The format is JSON.
+
 ### Fixed
 
 - `tb_status` right after the server starts waits for the add-on to attach instead of

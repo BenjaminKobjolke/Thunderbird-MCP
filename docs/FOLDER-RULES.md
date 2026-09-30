@@ -2,18 +2,22 @@
 
 Folder rules let selected mail moves and folder changes run without confirmation. With no rules, the existing confirmation behavior applies.
 
-Create `config.toml` in the tbmcp state directory: `%LOCALAPPDATA%\tbmcp\config.toml` on Windows, `~/Library/Application Support/tbmcp/config.toml` on macOS, or `${XDG_STATE_HOME:-~/.local/state}/tbmcp/config.toml` on Linux. `TBMCP_STATE_DIR` changes the state directory. Set `TBMCP_CONFIG` to use another file, or pass `tbmcp serve --config PATH`; the flag takes precedence. A missing file means no rules. Invalid TOML, a missing path, or an unknown action stops startup with an error.
+Copy `settings.example.json` to `settings.json` in the repository root. Git ignores your copy, so your personal rules stay local. The server loads `settings.json` by default. `TBMCP_CONFIG` can point to another file, and `tbmcp serve --config PATH` takes precedence over both. A wheel install has no repository settings file; set `TBMCP_CONFIG` or use `--config` there. A missing file means no rules. Invalid JSON, a missing path, or an unknown action stops startup with an error.
 
-Use `folder_list` to find the folder's `path` and, if you want to restrict the rule to one account, its `accountId`. For example:
+Use `folder_list` to find the folder's `path` and, if you want to restrict the rule to one account, its `accountId`. Add an optional `"account": "account1"` key with that account ID. For example:
 
-```toml
-[[folders]]
-path = "/@BKToDo"
-account = "account1" # optional; omit to match every account
-allow = ["create_subfolders", "rename_subfolders", "delete_subfolders", "move_in", "move_out"]
+```json
+{
+  "folders": [
+    {
+      "path": "/@BKToDo",
+      "allow": ["create_subfolders", "rename_subfolders", "delete_subfolders", "move_in", "move_out"]
+    }
+  ]
+}
 ```
 
-The rule covers the named folder and its descendants, case sensitively and by whole path segment. `"/@BKToDo"` does not cover `"/@BKToDoOld"`. Add more `[[folders]]` entries for other folders. Restart the MCP server after editing the file.
+The rule covers the named folder and its descendants, case sensitively and by whole path segment. `"/@BKToDo"` does not cover `"/@BKToDoOld"`. Add another object to the `folders` array for each additional folder. Restart the MCP server after editing the file.
 
 | Action | What can run without confirmation |
 | --- | --- |
