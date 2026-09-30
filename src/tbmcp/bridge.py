@@ -251,6 +251,8 @@ class Bridge:
         except TimeoutError:
             raise TimeoutError_(method, timeout) from None
         except NotConnectedError:
+            if _daemon_local(method):
+                raise
             # Thunderbird went away mid-session (a restart, or the add-on reloading).
             # Wait for it to come back once, then retry — the alternative is failing a
             # call for something that resolves itself in a second.

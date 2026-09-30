@@ -169,8 +169,10 @@ denylist, because that is the only layer with real privilege.
 | `tb_addons` | `x.admin.addons` | installed add-ons |
 | `tb_restart` | `x.admin.restart` | gated, interactive |
 
-`tb_status`, `tb_wait` and `tb_events` are daemon-local: they answer even when
-Thunderbird is closed, which is what makes a clear error possible instead of a hang.
+`tb_status`, `tb_wait` and `tb_events` are daemon-local. `tb_status` distinguishes
+`not-running` from `not-attached`: when Thunderbird is running and the daemon just
+started, it waits briefly for the add-on to attach. Otherwise it answers immediately,
+including when Thunderbird is closed. `tb_wait` explicitly blocks until attachment.
 
 ## Conventions every tool follows
 

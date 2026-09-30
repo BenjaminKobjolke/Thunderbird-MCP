@@ -10,11 +10,15 @@ guess at a timeout.
 # must evaluate at definition time so `Gate(...)` produces a real
 # `Annotated[Consent, Resolve(...)]` rather than a string the SDK has to re-evaluate.
 
+import asyncio
+import time
 from pathlib import Path
 from typing import Any, Literal
 
+from .. import addon_install
 from ..addon_build import build_check
-from ..errors import TbmcpError
+from ..bridge import ATTACH_WAIT_SECONDS
+from ..errors import NotConnectedError, TbmcpError
 from ..handshake import describe_handshake
 from ..safety import DESTRUCTIVE, Gate, guard_write, large_output, require
 from ..server import Registrar
@@ -22,10 +26,18 @@ from ._common import call, changed, clamp, one_of, page
 
 AddonKind = Literal["all", "extension", "theme", "dictionary", "locale"]
 
+STATUS_TIMEOUT = 15.0
+
 NOT_CONNECTED_HINT = (
     "Thunderbird is not attached to the bridge. Ask the user to start Thunderbird; if "
     "it is already running, the add-on is missing or disabled — `tbmcp install-addon` "
-    "installs it and `tbmcp doctor` reports on the rest of the chain."
+    "installs it and `tbmcp doctor` reports on the rest of the chain. If Thunderbird "
+    "was started moments ago, call `tb_wait` to wait for the add-on to attach."
+)
+
+NOT_RUNNING_HINT = (
+    "Thunderbird is not running. Ask the user to start it, then call `tb_wait` "
+    "to wait for the add-on to attach."
 )
 
 NO_EXPERIMENT_HINT = (
@@ -42,13 +54,43 @@ def register(reg: Registrar) -> None:
     async def tb_status() -> dict[str, Any]:
         """Whether Thunderbird is attached, and which halves of the add-on loaded.
 
-        Answered by the local daemon, so it works when Thunderbird is closed. Call it
-        first whenever another tool reports that it cannot reach Thunderbird.
+        Answered by the local daemon. Just after the daemon starts, if Thunderbird is
+        running, wait up to about 20 seconds for its add-on to attach. If Thunderbird
+        is closed, answer at once with `state: "not-running"`. The `state` field tells
+        callers whether to ask the user to start Thunderbird or call `tb_wait`.
         """
-        result = await call("daemon.status", timeout=15.0)
+        result = await call("daemon.status", timeout=STATUS_TIMEOUT)
+        running = True
+        waited = 0.0
+        if not result.get("connected"):
+            running = await asyncio.to_thread(addon_install.is_running)
+            uptime = (result.get("daemon") or {}).get("uptimeSeconds", ATTACH_WAIT_SECONDS)
+            if running and uptime < ATTACH_WAIT_SECONDS:
+                remaining = max(1.0, ATTACH_WAIT_SECONDS - uptime)
+                started = time.monotonic()
+                try:
+                    result = await call(
+                        "daemon.waitForThunderbird",
+                        {"timeout": remaining},
+                        timeout=remaining + 5.0,
+                    )
+                except NotConnectedError:
+                    result = await call("daemon.status", timeout=STATUS_TIMEOUT)
+                finally:
+                    waited = time.monotonic() - started
         thunderbird = result.get("thunderbird") or {}
+        connected = bool(result.get("connected"))
+        if connected:
+            state = "connected"
+        elif running:
+            state = "not-attached"
+        else:
+            state = "not-running"
         payload: dict[str, Any] = {
-            "connected": bool(result.get("connected")),
+            "connected": connected,
+            "state": state,
+            "thunderbirdRunning": running,
+            "waitedSeconds": waited,
             "privilegedHalf": thunderbird.get("experiment"),
             "app": thunderbird.get("app") or {},
             "addonVersion": thunderbird.get("addonVersion"),
@@ -61,7 +103,9 @@ def register(reg: Registrar) -> None:
             "handshake": result.get("handshake"),
         }
         if not payload["connected"]:
-            payload["hint"] = describe_handshake(result.get("handshake")) or NOT_CONNECTED_HINT
+            payload["hint"] = describe_handshake(result.get("handshake")) or (
+                NOT_CONNECTED_HINT if running else NOT_RUNNING_HINT
+            )
         elif payload["privilegedHalf"] is False:
             payload["hint"] = NO_EXPERIMENT_HINT
         profile = result.get("profile") or {}
@@ -135,7 +179,7 @@ def register(reg: Registrar) -> None:
         """
         # A diagnostics tool that refuses to answer while the thing it diagnoses is
         # down would be useless exactly when it is wanted, so degrade in two steps.
-        status = await call("daemon.status", timeout=15.0)
+        status = await call("daemon.status", timeout=STATUS_TIMEOUT)
         payload: dict[str, Any] = {
             "connected": bool(status.get("connected")),
             "daemon": status.get("daemon"),
