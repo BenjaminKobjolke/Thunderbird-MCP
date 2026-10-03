@@ -1,0 +1,13 @@
+{
+  "files": {
+    "TICKETS_WATCHER_COMMANDS.md": 1
+  },
+  "analysis_commands": [
+    ".venv\\Scripts\\python.exe -m pytest -q",
+    "node -e \"const fs=require('node:fs'); process.exit(fs.readdirSync('tests/js').some(name=>name.endsWith('.test.mjs'))?0:1)\" && node --test \"tests/js/*.test.mjs\"",
+    ".venv\\Scripts\\python.exe -m ruff check .",
+    ".venv\\Scripts\\python.exe -m ruff format --check .",
+    ".venv\\Scripts\\python.exe tools/check_consistency.py",
+    ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all"
+  ]
+}

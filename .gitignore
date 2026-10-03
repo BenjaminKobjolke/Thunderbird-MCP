@@ -33,6 +33,3 @@ HANDOFF.md
 tmp/commit_msg.tmp
 claude-plans
 tickets/
-
-# Tickets Watcher local install state
-tools/tickets-watcher.json
