@@ -369,8 +369,79 @@
     }
   }
 
+  async function findSaved(mode, subject, since) {
+    try {
+      const folders = await browser.folders.query({
+        specialUse: [mode === "template" ? "templates" : "drafts"], isUnified: false,
+      });
+      if (!folders.length) {
+        return null;
+      }
+      const query = { folderId: folders.map((folder) => folder.id), fromDate: new Date(since) };
+      if (subject) {
+        query.subject = subject;
+      }
+      for (let attempt = 0; attempt < 20; attempt++) {
+        let page = await browser.messages.query(query);
+        const hits = [];
+        let openList = page.id;
+        try {
+          while (page) {
+            hits.push(...(page.messages || []).filter(
+              (message) => message.subject === (subject || "") && new Date(message.date).getTime() >= since
+            ));
+            if (hits.length > 1) {
+              return null;
+            }
+            if (!page.id) {
+              openList = null;
+              break;
+            }
+            page = await browser.messages.continueList(page.id);
+            openList = page.id;
+          }
+        } finally {
+          if (openList) {
+            await browser.messages.abortList(openList).catch(() => {});
+          }
+        }
+        if (hits.length === 1) {
+          return hits[0];
+        }
+        if (attempt < 19) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+      }
+    } catch (ex) {
+      tbxLog.debug("could not locate saved draft:", ex.message || ex);
+    }
+    return null;
+  }
+
+  async function savedResult(result, mode, subject, since) {
+    if (isSave(mode) && !((result || {}).messages || []).length) {
+      const hit = await findSaved(mode, subject, since);
+      if (hit) {
+        return { ...result, messages: [hit] };
+      }
+    }
+    return result;
+  }
+
   async function deliverTab(tabId, mode) {
     let result;
+    // The subject only feeds the draft lookup, so failing to read it must not stop the save.
+    let subject;
+    let subjectRead = false;
+    if (isSave(mode)) {
+      try {
+        subject = (await browser.compose.getComposeDetails(tabId)).subject;
+        subjectRead = true;
+      } catch (ex) {
+        tbxLog.warn("could not read the subject before saving:", ex.message || ex);
+      }
+    }
+    const since = Date.now() - 2000;
     try {
       result = isSave(mode)
         ? await browser.compose.saveMessage(tabId, { mode: SAVE_MODE[mode] })
@@ -384,6 +455,9 @@
             ? ` — the composed message was kept as draft ${rescued}, so nothing was lost`
             : "")
       );
+    }
+    if (subjectRead) {
+      result = await savedResult(result, mode, subject, since);
     }
     await closeTab(tabId);
     return outcome(result, mode, "composeWindow");
@@ -442,10 +516,11 @@
     }
     if (canHeadless(mode) && !needsImageWindow(params)) {
       const details = await detailsFrom(params);
+      const since = Date.now() - 2000;
       const result = isSave(mode)
         ? await browser.messages.saveMessage(details, { mode: SAVE_MODE[mode] })
         : await browser.messages.sendMessage(details, { mode: SEND_MODE[mode] });
-      return outcome(result, mode, "headless");
+      return outcome(await savedResult(result, mode, details.subject, since), mode, "headless");
     }
     const tab = await openComposer("new", null, params);
     return deliverTab(tab.id, mode);

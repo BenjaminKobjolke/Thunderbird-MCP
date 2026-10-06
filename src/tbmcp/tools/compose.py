@@ -204,10 +204,14 @@ def _result(raw: dict[str, Any], mode: str, **extra: Any) -> dict[str, Any]:
     if mode in ("draft", "template"):
         payload["saved"] = True
         payload["draftId"] = raw.get("messageId")
+        location = (
+            f" in {folder}"
+            if folder
+            else "; Thunderbird did not report where. Find it with mail_search by subject"
+        )
         payload["note"] = (
-            f"Nothing was sent. The message is saved as a {mode}"
-            + (f" in {folder}" if folder else "")
-            + ". Tell the user it is waiting for them to read over, and repeat the call "
+            f"Nothing was sent. The message is saved as a {mode}{location}. "
+            "Tell the user it is waiting for them to read over, and repeat the call "
             'with mode="send" only once they have agreed.'
         )
     elif mode == "later":

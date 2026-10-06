@@ -60,6 +60,14 @@ async def test_invalid_inline_images_never_reach_bridge(fake_bridge, change, hin
     assert bridge.calls == []
 
 
+async def test_missing_draft_location_suggests_search(fake_bridge):
+    bridge = fake_bridge({"compose.save": {"messageId": None, "folderPath": None}})
+    async with Client(_server(bridge)) as client:
+        result = await client.call_tool("mail_draft_save", {"subject": "photo"})
+    assert not result.is_error
+    assert "mail_search" in result.structured_content["note"]
+
+
 async def test_reply_carries_inline_images(fake_bridge):
     bridge = fake_bridge({"compose.reply": {"messageId": 42, "folderPath": "/Drafts"}})
     async with Client(_server(bridge)) as client:

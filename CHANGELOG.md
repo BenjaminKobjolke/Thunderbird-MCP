@@ -14,6 +14,9 @@
 
 ### Fixed
 
+- `mail_draft_save` locates the saved draft and reports its id and folder when
+  Thunderbird omits them from the save response.
+
 - `tb_status` right after the server starts waits for the add-on to attach instead of
   reporting `connected: false`, and reports `state` (`connected`, `not-running`,
   `not-attached`).
