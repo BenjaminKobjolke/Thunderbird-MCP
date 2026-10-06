@@ -16,6 +16,10 @@
 
 ### Fixed
 
+- `install-addon`, `refresh` and `tools/tb_console.py` ask every Thunderbird window to
+  close and find a closed portable install and its profile from Windows user variables.
+  `install-addon` names windows that refuse to close; `tools\refresh_live.bat` no longer
+  fails when Thunderbird is closed.
 - `install-addon` finds a portable Thunderbird and its profile from the running process;
   `tools/tb_console.py` now keeps that profile when it restarts Thunderbird.
 

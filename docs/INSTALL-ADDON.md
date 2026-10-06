@@ -49,6 +49,8 @@ For unattended refresh after implementation work, add a Tickets Watcher automati
 trigger **todo done**, project **Thunderbird MCP**, action **command** with
 `tools\refresh_live.bat`. The command restarts Thunderbird only when the add-on changed.
 `tools\install_addon.bat` remains the explicit reinstall-and-restart command.
+When Thunderbird is closed, `tools\refresh_live.bat` skips its live check and succeeds
+without starting it.
 
 ## Automatic install
 
