@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -108,11 +109,34 @@ class InstallOutcome:
 # ------------------------------------------------------------------- executable
 
 
+def running_executable() -> pathlib.Path | None:
+    """Find the executable named by a running Thunderbird command line."""
+    for line in running_command_lines():
+        if re.search(r"(?:^|\s)-contentproc(?:\s|$)", line, re.I):
+            continue
+        # ponytail: reads the leading command token; wrapped launchers need structured process metadata.
+        match = re.match(
+            r'^\s*(?:"([^"\r\n]*[/\\]thunderbird(?:\.exe)?)"|'
+            r"(.+?[/\\]thunderbird(?:\.exe)?))(?=\s|$)",
+            line,
+            re.I,
+        )
+        if match:
+            path = pathlib.Path(match.group(1) or match.group(2))
+            if path.is_file():
+                return path
+    return None
+
+
 def find_thunderbird() -> pathlib.Path | None:
     """Locate the Thunderbird binary for this platform."""
     override = os.environ.get("TBMCP_THUNDERBIRD")
     if override and pathlib.Path(override).exists():
         return pathlib.Path(override)
+
+    running = running_executable()
+    if running is not None:
+        return running
 
     if sys.platform == "win32":
         candidates = [
@@ -264,8 +288,10 @@ def install_automatic(
     exe = find_thunderbird()
     if exe is None:
         raise UnsupportedError(
-            "could not find thunderbird.exe. Set TBMCP_THUNDERBIRD to its full path, "
-            "or use `tbmcp install-addon --manual`."
+            "could not find thunderbird.exe. Thunderbird is not running and "
+            "TBMCP_THUNDERBIRD is not set in this process (a variable set after the "
+            "calling program started is not visible to it); start Thunderbird, set the "
+            "variable, or use `tbmcp install-addon --manual`."
         )
     package = xpi or build_xpi(state_dir() / "addon")
     identifier = addon_id()

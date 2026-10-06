@@ -334,7 +334,29 @@ def test_doctor_json_and_install_addon_profile_policy(monkeypatch, tmp_path, cap
     monkeypatch.setattr("tbmcp.profile.find_profile", lambda *a, **kw: calls.append(kw) or profile)
     monkeypatch.setattr("tbmcp.addon_install.manual_instructions", lambda: (None, "manual"))
     assert cmd_install_addon(build_parser().parse_args(["install-addon", "--manual"])) == 0
-    assert calls == [{"follow_running": False}]
+    assert calls == [{}]
+
+
+@pytest.mark.usefixtures("_clean_tbmcp_env")
+def test_install_addon_uses_running_profile_when_environment_is_missing(monkeypatch, tmp_path):
+    from tbmcp.cli import cmd_install_addon
+
+    profile_path = tmp_path / "portable-profile"
+    profile_path.mkdir()
+    monkeypatch.setattr(
+        "tbmcp.addon_install.running_command_lines",
+        lambda: [f'thunderbird.exe -profile "{profile_path}"'],
+    )
+    received = []
+
+    def install(profile, **kwargs):
+        received.append((profile, kwargs))
+        return SimpleNamespace(ok=True, message="installed")
+
+    monkeypatch.setattr("tbmcp.addon_install.install_automatic", install)
+    assert cmd_install_addon(build_parser().parse_args(["install-addon", "--yes"])) == 0
+    assert received[0][0].path == profile_path
+    assert received[0][0].source == "running"
 
 
 @pytest.mark.usefixtures("_clean_tbmcp_env")

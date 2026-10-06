@@ -110,7 +110,7 @@ def cmd_install_addon(args: argparse.Namespace) -> int:
     from . import addon_install
     from .profile import find_profile
 
-    profile = find_profile(args.profile, follow_running=False)
+    profile = find_profile(args.profile)
     if args.manual:
         _package, text = addon_install.manual_instructions()
         print(text)
@@ -132,11 +132,15 @@ def cmd_install_addon(args: argparse.Namespace) -> int:
     outcome = addon_install.install_automatic(profile, restart_after=not args.no_restart)
     print(outcome.message)
     if not outcome.ok:
-        _package, text = addon_install.manual_instructions(outcome.xpi)
-        print("\nAutomatic install did not work. Do it by hand:\n", file=sys.stderr)
-        print(text, file=sys.stderr)
+        _print_manual_install_fallback(addon_install, outcome)
         return 1
     return 0
+
+
+def _print_manual_install_fallback(addon_install, outcome) -> None:
+    _package, text = addon_install.manual_instructions(outcome.xpi)
+    print("\nAutomatic install did not work. Do it by hand:\n", file=sys.stderr)
+    print(text, file=sys.stderr)
 
 
 def _doctor_ok(report: dict) -> bool:
