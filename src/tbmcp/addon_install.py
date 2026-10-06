@@ -169,6 +169,34 @@ def running_pids() -> list[int]:
         return []
 
 
+def running_command_lines() -> list[str]:
+    """Command lines of running Thunderbird processes, best effort."""
+    try:
+        if sys.platform == "win32":
+            command = [
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "Get-CimInstance Win32_Process -Filter \"Name='thunderbird.exe'\" | ForEach-Object CommandLine",
+            ]
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        else:
+            command = ["ps", "-A", "-o", "args="]
+            flags = 0
+        lines = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+            creationflags=flags,
+        ).stdout.splitlines()
+        return [line for line in lines if "thunderbird" in line.lower()]
+    except (OSError, subprocess.SubprocessError):
+        return []
+
+
 def is_running() -> bool:
     return bool(running_pids())
 

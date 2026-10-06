@@ -65,6 +65,19 @@ def _daemon_status(handshake: dict | None) -> dict:
     }
 
 
+async def test_status_names_wrong_profile_before_handshake(fake_bridge, monkeypatch):
+    monkeypatch.setattr(addon_install, "is_running", lambda: True)
+    status = _daemon_status(FAILING_HANDSHAKE)
+    status["profile"] = {"path": "/a", "source": "explicit", "thunderbirdProfiles": ["/b"]}
+    bridge = fake_bridge({"daemon.status": status})
+    async with Client(_server(bridge)) as client:
+        payload = (await client.call_tool("tb_status", {})).structured_content
+        diagnostics = (await client.call_tool("tb_diagnostics", {})).structured_content
+    for result in (payload, diagnostics):
+        assert "/a" in result["hint"] and "/b" in result["hint"]
+        assert "TBMCP_PROFILE" in result["hint"]
+
+
 async def test_tb_status_explains_a_failing_handshake_rather_than_blaming_the_user(
     fake_bridge,
     monkeypatch,
@@ -188,7 +201,8 @@ async def test_tb_status_does_not_wait_for_old_daemon(fake_bridge, monkeypatch) 
 
     assert bridge.methods() == ["daemon.status"]
     assert payload["state"] == "not-attached"
-    assert payload["hint"] == NOT_CONNECTED_HINT
+    assert payload["hint"].startswith(NOT_CONNECTED_HINT)
+    assert "/profile" in payload["hint"]
     assert payload["waitedSeconds"] == 0
 
 

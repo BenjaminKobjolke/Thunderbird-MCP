@@ -78,8 +78,9 @@ Thunderbird. Since Python owns the listener, exactly one process may bind it. He
 
 ### Pairing and auth
 
-The daemon picks a free port, then writes a connection file into the Thunderbird
-profile directory it discovered from `profiles.ini`:
+The daemon picks a free port, then writes a connection file into the running
+Thunderbird's profile, or the `profiles.ini` default if Thunderbird is closed. It
+moves the file when an auto-picked default differs from the profile Thunderbird starts with:
 
 ```jsonc
 // <profile>/tbmcp-bridge.json   (0600 on POSIX; ACL-restricted on Windows, see FILE-PERMISSIONS.md)

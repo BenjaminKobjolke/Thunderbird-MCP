@@ -296,6 +296,47 @@ def _run_doctor(monkeypatch, argv: list[str], **stubs) -> int:
     return cmd_doctor(build_parser().parse_args(["doctor", *argv, "--wait", "0"]))
 
 
+def test_doctor_names_profile_source_and_mismatch(monkeypatch, tmp_path, capsys):
+    profile = ThunderbirdProfile(tmp_path, "portable", False, tmp_path, "running")
+    _run_doctor(
+        monkeypatch,
+        [],
+        profile=profile,
+        bridge_status={
+            "connected": False,
+            "profile": {
+                "path": "/wrong",
+                "source": "explicit",
+                "thunderbirdProfiles": ["/portable"],
+            },
+        },
+        addon_summary={"thunderbirdRunning": True},
+    )
+    output = capsys.readouterr().out
+    assert "profile chosen by" in output and "taken from the running Thunderbird" in output
+    assert "/wrong" in output and "/portable" in output and "TBMCP_PROFILE" in output
+
+
+def test_doctor_json_and_install_addon_profile_policy(monkeypatch, tmp_path, capsys):
+    from tbmcp.cli import cmd_install_addon
+
+    profile = ThunderbirdProfile(tmp_path, "portable", False, tmp_path, "running")
+    _run_doctor(
+        monkeypatch,
+        ["--json"],
+        profile=profile,
+        bridge_status={"connected": True},
+        addon_summary={"thunderbirdRunning": True},
+    )
+    assert json.loads(capsys.readouterr().out)["profileSource"] == "running"
+
+    calls = []
+    monkeypatch.setattr("tbmcp.profile.find_profile", lambda *a, **kw: calls.append(kw) or profile)
+    monkeypatch.setattr("tbmcp.addon_install.manual_instructions", lambda: (None, "manual"))
+    assert cmd_install_addon(build_parser().parse_args(["install-addon", "--manual"])) == 0
+    assert calls == [{"follow_running": False}]
+
+
 @pytest.mark.usefixtures("_clean_tbmcp_env")
 def test_the_json_report_compares_the_installed_add_on_with_the_source(
     monkeypatch, tmp_path, capsys

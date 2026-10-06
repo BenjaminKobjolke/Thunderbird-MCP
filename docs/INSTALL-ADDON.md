@@ -51,7 +51,16 @@ any folder or as a Tickets Watcher command.
 
 Without `--manual`, `install-addon` installs the package itself and restarts
 Thunderbird once (it asks first; `--yes` skips the prompt, `--no-restart` leaves
-Thunderbird closed). Pass `--profile <name or directory>` for a non-default profile,
-e.g. a portable install.
-The batch file uses the default profile; run the command by hand for a non-default
-profile.
+Thunderbird closed). Pass `--profile <name or directory>` for a non-default profile.
+The batch file uses the default profile; run the command by hand for a non-default profile.
+
+## Portable Thunderbird
+
+The daemon finds the portable profile automatically while Thunderbird runs. To pin it
+even when Thunderbird is closed, set `TBMCP_PROFILE=D:\Apps\ThunderbirdPortable\Data\profile`
+in the MCP server configuration. `tbmcp doctor` shows "profile chosen by" and the
+daemon's profile.
+
+For automatic add-on installation, run `tbmcp install-addon --profile
+D:\Apps\ThunderbirdPortable\Data\profile` with `TBMCP_THUNDERBIRD` set to the portable
+`thunderbird.exe`; alternatively use `tbmcp install-addon --manual`.

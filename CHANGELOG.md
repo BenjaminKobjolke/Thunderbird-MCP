@@ -14,6 +14,9 @@
 
 ### Fixed
 
+- Auto-detect portable Thunderbird's running profile, move the pairing file when
+  needed, and show the profile choice and mismatch in status and doctor.
+
 - `mail_draft_save` locates the saved draft and reports its id and folder when
   Thunderbird omits them from the save response.
 

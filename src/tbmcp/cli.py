@@ -110,7 +110,7 @@ def cmd_install_addon(args: argparse.Namespace) -> int:
     from . import addon_install
     from .profile import find_profile
 
-    profile = find_profile(args.profile)
+    profile = find_profile(args.profile, follow_running=False)
     if args.manual:
         _package, text = addon_install.manual_instructions()
         print(text)
@@ -203,6 +203,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     ]
     profile = find_profile(settings.profile)
     report["profileSelected"] = str(profile.path) if profile else None
+    report["profileSource"] = profile.source if profile else None
     if profile:
         report["addonBuild"] = addon_build.build_check(profile.path)
         snapshot = ProfileSnapshot.load(profile)
@@ -332,6 +333,8 @@ def _transport_line(transport: dict) -> str:
 
 
 def _print_doctor(report: dict) -> None:
+    from .profile import SOURCE_LABELS, describe_profile, profile_mismatch
+
     def line(label: str, value: object) -> None:
         print(f"  {label:<26} {value}")
 
@@ -357,6 +360,8 @@ def _print_doctor(report: dict) -> None:
     line("add-on build (source)", versions.get("sourceBuild") or "unknown")
     line("add-on build (installed)", versions.get("installedBuild") or "unknown")
     line("profile", report.get("profileSelected") or "NOT FOUND")
+    if report.get("profileSource"):
+        line("profile chosen by", SOURCE_LABELS[report["profileSource"]])
     if report.get("accountsOnDisk") is not None:
         line("accounts (from prefs.js)", report["accountsOnDisk"])
         line("outgoing servers", report["outgoingServersOnDisk"])
@@ -379,6 +384,15 @@ def _print_doctor(report: dict) -> None:
     line("daemon", f"pid {daemon.get('pid')}" if daemon.get("running") else "not running")
     line("daemon log", daemon.get("logFile") or "unknown")
     bridge = report.get("bridge") or {}
+    bridge_profile = bridge.get("profile") or {}
+    if bridge_profile.get("path"):
+        source = bridge_profile.get("source")
+        label = f" ({SOURCE_LABELS[source]})" if source in SOURCE_LABELS else ""
+        line("daemon profile", f"{bridge_profile['path']}{label}")
+        line(
+            "Thunderbird's profile",
+            ", ".join(bridge_profile.get("thunderbirdProfiles") or []) or "not on its command line",
+        )
     if bridge.get("error"):
         line("status", f"ERROR: {bridge['error']}")
     else:
@@ -435,7 +449,9 @@ def _print_doctor(report: dict) -> None:
             print("  * Thunderbird is not running — start it.")
         else:
             failures = describe_handshake(bridge.get("handshake"))
-            if failures:
+            if profile_mismatch(bridge_profile):
+                paragraph(describe_profile(bridge_profile, running=True))
+            elif failures:
                 # It has dialled in, repeatedly. Anything below would be a guess that
                 # the record already contradicts.
                 paragraph(failures)

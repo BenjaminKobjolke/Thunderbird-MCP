@@ -313,11 +313,15 @@ and names the broken one with the command that fixes it.
 | Symptom | What to do |
 | --- | --- |
 | "Thunderbird is not connected" | start Thunderbird; if it is running, `tbmcp doctor` says why the add-on has not attached |
+| Thunderbird runs but never attaches, and `doctor` shows two different profiles | set `TBMCP_PROFILE` or `--profile` to the directory Thunderbird uses, then restart the daemon and MCP client |
 | the add-on connects but never completes the handshake | restart Thunderbird; `doctor` shows both views and the daemon log's path |
 | `doctor` warns the installed add-on is older than the package | `tbmcp install-addon` |
 | settings tools fail, mail tools work | the privileged half did not load → `tbmcp install-addon` |
 | full-text search finds nothing | the global indexer is off (Settings → General), or `search_global` names the words the index cannot match |
 | a dependency fails to load on Windows | Windows Application Control blocked a wheel; `python bootstrap.py` repairs it |
+
+The profile is chosen from `TBMCP_PROFILE` / `--profile`, then the running Thunderbird's
+`-profile` argument, then the `profiles.ini` default.
 
 `TBMCP_DEBUG=1` logs verbosely to stderr; `TBMCP_STATE_DIR` moves the daemon's
 files; `tb_console` returns the add-on's `[tbmcp]` lines as a tool.

@@ -11,8 +11,8 @@ from typing import Any
 
 import pytest
 
+from tbmcp import addon_install, safety
 from tbmcp import bridge as bridge_module
-from tbmcp import safety
 from tbmcp.config import Settings
 
 
@@ -97,3 +97,8 @@ def reset_settings():
     """Tool modules read the active policy from module state; keep tests isolated."""
     yield
     safety.set_settings(Settings())
+
+
+@pytest.fixture(autouse=True)
+def no_running_command_lines(monkeypatch):
+    monkeypatch.setattr(addon_install, "running_command_lines", lambda: [])

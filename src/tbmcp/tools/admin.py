@@ -20,6 +20,7 @@ from ..addon_build import build_check
 from ..bridge import ATTACH_WAIT_SECONDS
 from ..errors import NotConnectedError, TbmcpError
 from ..handshake import describe_handshake
+from ..profile import describe_profile, profile_mismatch
 from ..safety import DESTRUCTIVE, Gate, guard_write, large_output, require
 from ..server import Registrar
 from ._common import call, changed, clamp, one_of, page
@@ -103,9 +104,15 @@ def register(reg: Registrar) -> None:
             "handshake": result.get("handshake"),
         }
         if not payload["connected"]:
-            payload["hint"] = describe_handshake(result.get("handshake")) or (
-                NOT_CONNECTED_HINT if running else NOT_RUNNING_HINT
-            )
+            profile_status = result.get("profile") or {}
+            detail = describe_profile(profile_status, running=running)
+            if profile_mismatch(profile_status):
+                payload["hint"] = detail
+            else:
+                generic = NOT_CONNECTED_HINT if running else NOT_RUNNING_HINT
+                payload["hint"] = describe_handshake(result.get("handshake")) or (
+                    generic + (" " + detail if running and detail else "")
+                )
         elif payload["privilegedHalf"] is False:
             payload["hint"] = NO_EXPERIMENT_HINT
         profile = result.get("profile") or {}
@@ -188,7 +195,14 @@ def register(reg: Registrar) -> None:
             "handshake": status.get("handshake"),
         }
         if not payload["connected"]:
-            payload["hint"] = describe_handshake(status.get("handshake")) or NOT_CONNECTED_HINT
+            profile_status = status.get("profile") or {}
+            detail = describe_profile(profile_status, running=True)
+            if profile_mismatch(profile_status):
+                payload["hint"] = detail
+            else:
+                payload["hint"] = describe_handshake(status.get("handshake")) or (
+                    NOT_CONNECTED_HINT + (" " + detail if detail else "")
+                )
             return payload
         try:
             payload.update(await call("x.admin.diagnostics", timeout=60.0))
