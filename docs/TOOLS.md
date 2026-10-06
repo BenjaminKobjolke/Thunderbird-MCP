@@ -66,9 +66,20 @@ settings 11, admin 7. `tbmcp tools --toolsets all` prints the live list.
 | `mail_compose_open` | `compose.open` | opens a window for the user to finish |
 | `mail_send_status` | `compose.status` | outbox / send-later queue |
 
-`compose.send` uses `messages.sendMessage`, which sends without opening a compose
-window, and falls back to `compose.beginNew` + `sendMessage(tabId)` when that is
-unavailable. HTML bodies are supported; pass `is_html`.
+The five writing tools accept `inline_images`: a map from reference name to an
+absolute image path. In an HTML body, put `<img src="cid:logo">` where the picture
+belongs and pass `inline_images={"logo": "C:\\images\\logo.png"}` with
+`is_html=true`. Each name must be referenced. Only image files are accepted, up to
+25 MB each; reading paths needs the privileged half of the add-on. Thunderbird
+assigns the final `Content-ID`, which may differ from the reference name. A reply
+with inline images opens in HTML mode. Inline images may not survive editing in
+Thunderbird for Android.
+
+New messages without inline images use `messages.sendMessage` or
+`messages.saveMessage` headlessly when available. Replies, forwards, image bodies,
+and builds without the headless capability open a compose window briefly. The
+window lets Thunderbird store inline images as MIME parts for both drafts and sent
+mail. A raw `<img src="data:…">` body also uses the window route.
 
 `messages.sendMessage` needs the `messages.send` permission, which Thunderbird
 declares `OptionalOnlyPermission` — unrequestable from the manifest, grantable only

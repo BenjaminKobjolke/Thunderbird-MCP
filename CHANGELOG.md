@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Compose tools accept `inline_images` paths and embed the pictures in HTML mail.
+
 ### Changed
 
 - Folder rules now load from git-ignored `settings.json` in the repository root

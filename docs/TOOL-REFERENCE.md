@@ -326,8 +326,10 @@ list entry. `attachments` are paths to files on this machine. A draft still
 asks for confirmation, because the identical call with `mode="send"` would
 deliver it. Set `reply_to_message_id` to thread the message under an existing
 one — but `mail_reply` is usually what you want, since it also quotes.
+`inline_images` maps names to image paths; place `<img src="cid:NAME">` in
+an HTML body and set `is_html=true`.
 
-Parameters: **to**, **subject**, **body**, cc, bcc, is_html, attachments, identity_id, mode, reply_to_message_id, priority, return_receipt, delivery_format, custom_headers, confirm, dry_run_only  
+Parameters: **to**, **subject**, **body**, cc, bcc, is_html, attachments, inline_images, identity_id, mode, reply_to_message_id, priority, return_receipt, delivery_format, custom_headers, confirm, dry_run_only  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `mail_reply` · **destructive**
@@ -338,8 +340,10 @@ Thunderbird derives the recipients, the subject and the quoted original;
 `body` goes above the quote. `reply_all` copies everyone, `reply_to_list`
 answers the mailing list. Passing `cc` replaces the addresses Thunderbird
 derived, so leave it unset unless that is the intent.
+`inline_images` maps names to image paths; place `<img src="cid:NAME">` in
+an HTML body and set `is_html=true`.
 
-Parameters: **message_id**, **body**, reply_all, reply_to_list, quote_original, is_html, subject, cc, bcc, attachments, identity_id, mode, confirm  
+Parameters: **message_id**, **body**, reply_all, reply_to_list, quote_original, is_html, subject, cc, bcc, attachments, inline_images, identity_id, mode, confirm  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `mail_forward` · **destructive**
@@ -349,8 +353,10 @@ Forward a message. Saves a reviewable draft unless `mode="send"`.
 `inline` quotes the original in the body; `attachment` attaches it as a
 `.eml`, which preserves the headers a recipient may need. `body` is your
 covering note and goes above the forwarded text.
+`inline_images` maps names to image paths; place `<img src="cid:NAME">` in
+an HTML body and set `is_html=true`.
 
-Parameters: **message_id**, **to**, body, forward_as, cc, bcc, subject, is_html, attachments, identity_id, mode, confirm  
+Parameters: **message_id**, **to**, body, forward_as, cc, bcc, subject, is_html, attachments, inline_images, identity_id, mode, confirm  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `mail_draft_save` · write
@@ -361,8 +367,10 @@ Nothing leaves the machine, so this is not gated — a draft is exactly the
 thing to produce when you want the user to review before anything is sent.
 A template is the reusable kind: Thunderbird keeps it in Templates and opens
 a copy when the user picks it. Recipients are optional here, unlike a send.
+`inline_images` maps names to image paths; place `<img src="cid:NAME">` in
+an HTML body and set `is_html=true`.
 
-Parameters: subject, body, to, cc, bcc, kind, is_html, attachments, identity_id  
+Parameters: subject, body, to, cc, bcc, kind, is_html, attachments, inline_images, identity_id  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `mail_compose_open` · write
@@ -373,8 +381,10 @@ The right answer whenever the wording matters more than the automation, or
 when the user declined a send: they get the draft in front of them with the
 cursor in it. Nothing is sent or saved, and the user sees the window appear,
 so this is not gated.
+`inline_images` maps names to image paths; place `<img src="cid:NAME">` in
+an HTML body and set `is_html=true`.
 
-Parameters: to, subject, body, cc, bcc, is_html, attachments, identity_id, reply_to_message_id, forward_message_id, reply_all, quote_original  
+Parameters: to, subject, body, cc, bcc, is_html, attachments, inline_images, identity_id, reply_to_message_id, forward_message_id, reply_all, quote_original  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `mail_send_status` · read

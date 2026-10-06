@@ -13,6 +13,7 @@
  *     References: `NewMessageDetails` has no `relatedMessageId`, and `customHeaders`
  *     rejects everything outside `X-*`. Every reply and forward therefore goes
  *     through a window, briefly, even when the headless API is available.
+ *     Inline images also need the window's editor to become MIME parts.
  *
  * When a send fails we save the composition into Drafts before closing the window.
  * A stray draft is a far smaller problem than discarding a body the caller has
@@ -112,22 +113,59 @@
 
   /** Attachments named by path are read by the privileged half, so a multi-megabyte
    *  file never has to travel through a JSON frame on the bridge. */
-  async function fileFromPath(path, name) {
+  async function readPath(path, what) {
     if (!browser.tbx) {
       throw tbxError.unsupported(
-        "attaching a file by path needs the privileged half of the add-on, which did " +
-          "not load — reinstall with `tbmcp install-addon`, or pass filename plus base64"
+        `${what} by path needs the privileged half of the add-on — reinstall with ` +
+          "`tbmcp install-addon`"
       );
     }
-    let read;
     try {
-      read = await browser.tbx.invoke("files.read", { path });
+      return await browser.tbx.invoke("files.read", { path });
     } catch (ex) {
-      // The privileged half packs its failures into the message; say what it said.
       const failure = tbxError.fromWire(ex) || ex;
-      throw tbxError.usage(`could not read attachment ${path}: ${failure.message || failure}`);
+      throw tbxError.usage(`could not read ${what} ${path}: ${failure.message || failure}`);
     }
+  }
+
+  async function fileFromPath(path, name) {
+    const read = await readPath(path, "attachment");
     return fileFromBase64(name || read.name, read.base64, read.contentType);
+  }
+
+  function needsImageWindow(params) {
+    return Boolean(
+      (params.inlineImages && params.inlineImages.length) ||
+      (params.isHtml && /<img\b[^>]*\bsrc\s*=\s*(["'])data:[^"']*\1/i.test(params.body || ""))
+    );
+  }
+
+  async function inlined(params) {
+    if (!params.inlineImages || !params.inlineImages.length) {
+      return params;
+    }
+    if (!params.isHtml || !params.body) {
+      throw tbxError.usage("inline images need isHtml=true and an HTML body");
+    }
+    let body = params.body;
+    for (const { cid, path } of params.inlineImages) {
+      if (!/^[A-Za-z0-9._-]+$/.test(cid) || !path) {
+        throw tbxError.usage("each inline image needs a simple cid name and file path");
+      }
+      const escaped = cid.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const reference = new RegExp(`(["'])cid:${escaped}\\1`, "g");
+      if (!reference.test(body)) {
+        throw tbxError.usage(`put <img src="cid:${cid}"> in body where the picture belongs`);
+      }
+      const read = await readPath(path, "inline image");
+      if (!read.contentType || !read.contentType.startsWith("image/")) {
+        throw tbxError.usage(`inline image ${path} must be an image file`);
+      }
+      const data = `data:${read.contentType};filename=${encodeURIComponent(read.name || cid)};base64,${read.base64}`;
+      body = body.replace(reference, (_, quote) => `${quote}${data}${quote}`);
+    }
+    const { inlineImages, ...rest } = params;
+    return { ...rest, body };
   }
 
   async function attachmentsFrom(value) {
@@ -354,6 +392,8 @@
   /** Open a composer of the requested kind and merge the caller's body into whatever
    *  Thunderbird generated. `kind` is "new", "reply" or "forward". */
   async function openComposer(kind, relatedId, params) {
+    const forceHtml = needsImageWindow(params);
+    params = await inlined(params);
     const details = await detailsFrom(params);
     if (kind !== "new") {
       // Thunderbird writes the quoted or forwarded body itself; ours is merged in
@@ -361,6 +401,9 @@
       delete details.body;
       delete details.plainTextBody;
       delete details.isPlainText;
+      if (forceHtml) {
+        details.isPlainText = false;
+      }
     }
     let tab;
     if (kind === "reply") {
@@ -397,7 +440,7 @@
       const tab = await openComposer("reply", params.replyToMessageId, params);
       return deliverTab(tab.id, mode);
     }
-    if (canHeadless(mode)) {
+    if (canHeadless(mode) && !needsImageWindow(params)) {
       const details = await detailsFrom(params);
       const result = isSave(mode)
         ? await browser.messages.saveMessage(details, { mode: SAVE_MODE[mode] })
