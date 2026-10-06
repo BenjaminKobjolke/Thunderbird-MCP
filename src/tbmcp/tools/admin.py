@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 from typing import Any, Literal
 
-from .. import addon_install
+from .. import addon_install, ipc
 from ..addon_build import build_check
 from ..bridge import ATTACH_WAIT_SECONDS
 from ..errors import NotConnectedError, TbmcpError
@@ -28,6 +28,7 @@ from ._common import call, changed, clamp, one_of, page
 AddonKind = Literal["all", "extension", "theme", "dictionary", "locale"]
 
 STATUS_TIMEOUT = 15.0
+SERVER_STARTED_AT = time.time()
 
 NOT_CONNECTED_HINT = (
     "Thunderbird is not attached to the bridge. Ask the user to start Thunderbird; if "
@@ -128,6 +129,13 @@ def register(reg: Registrar) -> None:
                     )
             except OSError:
                 pass
+        if ipc.newest_source_mtime() > SERVER_STARTED_AT:
+            payload["serverCodeStale"] = True
+            payload.setdefault(
+                "hint",
+                "This MCP server process was started before its Python code last changed; "
+                "reconnect the server in the MCP client to load the current tools.",
+            )
         return payload
 
     @reg.read_tool(title="Wait for Thunderbird")

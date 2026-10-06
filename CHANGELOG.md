@@ -5,6 +5,8 @@
 ### Added
 
 - Compose tools accept `inline_images` paths and embed the pictures in HTML mail.
+- `tbmcp refresh` restarts stale daemon code, updates the add-on only when its build
+  changed, and reports stale MCP server processes through `tb_status`.
 
 ### Changed
 
@@ -13,6 +15,9 @@
   The format is JSON.
 
 ### Fixed
+
+- `install-addon` finds a portable Thunderbird and its profile from the running process;
+  `tools/tb_console.py` now keeps that profile when it restarts Thunderbird.
 
 - Auto-detect portable Thunderbird's running profile, move the pairing file when
   needed, and show the profile choice and mismatch in status and doctor.

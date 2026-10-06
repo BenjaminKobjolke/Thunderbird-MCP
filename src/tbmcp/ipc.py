@@ -21,6 +21,20 @@ PROTOCOL_VERSION = 1
 MAX_LINE = 64 * 1024 * 1024  # a raw message body can legitimately be large
 
 
+def newest_source_mtime() -> float:
+    """Latest readable Python source modification time in the tbmcp package."""
+    newest = 0.0
+    try:
+        for path in Path(__file__).parent.rglob("*.py"):
+            try:
+                newest = max(newest, path.stat().st_mtime)
+            except OSError:
+                continue
+    except OSError:
+        pass
+    return newest
+
+
 def state_dir() -> Path:
     """Per-user directory for the daemon advertisement, lock and log.
 

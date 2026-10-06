@@ -315,7 +315,7 @@ and names the broken one with the command that fixes it.
 | "Thunderbird is not connected" | start Thunderbird; if it is running, `tbmcp doctor` says why the add-on has not attached |
 | Thunderbird runs but never attaches, and `doctor` shows two different profiles | set `TBMCP_PROFILE` or `--profile` to the directory Thunderbird uses, then restart the daemon and MCP client |
 | the add-on connects but never completes the handshake | restart Thunderbird; `doctor` shows both views and the daemon log's path |
-| `doctor` warns the installed add-on is older than the package | `tbmcp install-addon` |
+| `doctor` warns the installed add-on is older than the package | `tbmcp refresh` |
 | settings tools fail, mail tools work | the privileged half did not load → `tbmcp install-addon` |
 | full-text search finds nothing | the global indexer is off (Settings → General), or `search_global` names the words the index cannot match |
 | a dependency fails to load on Windows | Windows Application Control blocked a wheel; `python bootstrap.py` repairs it |
@@ -341,6 +341,7 @@ ruff check . && ruff format --check .
 python tools/check_consistency.py       # the three layers still agree
 python tools/smoke_search.py            # live acceptance, against a running Thunderbird
 tools\install_addon.bat                 # after addon/ changes: build, install, restart Thunderbird, doctor
+tools\refresh_live.bat                  # refresh changed code, restart only when needed, doctor
 ```
 
 The add-on's real scripts run under `node:vm` against fakes of the WebExtension and

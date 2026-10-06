@@ -40,27 +40,27 @@ warns if Thunderbird is running an older build, even if its version matches.
 
 ## When to reinstall
 
-Only after something under `addon/` changes. Python-only changes (`src/tbmcp/`) take
-effect with an editable install as soon as the MCP server restarts.
-After any change under `addon/`, rerun `tbmcp install-addon`; `doctor` and `tb_status`
-flag an installed build that differs from the current source.
-`tools\install_addon.bat` runs `install-addon --yes` and `doctor` in one step from
-any folder or as a Tickets Watcher command.
+After any change, run `tbmcp refresh` (or `tools\refresh_live.bat`). It stops a daemon
+running old Python code and reinstalls the add-on only when its build differs; a current
+add-on is left alone, so Thunderbird does not restart. `doctor` and `tb_status` report
+stale add-on and server code.
+
+For unattended refresh after implementation work, add a Tickets Watcher automation rule:
+trigger **todo done**, project **Thunderbird MCP**, action **command** with
+`tools\refresh_live.bat`. The command restarts Thunderbird only when the add-on changed.
+`tools\install_addon.bat` remains the explicit reinstall-and-restart command.
 
 ## Automatic install
 
 Without `--manual`, `install-addon` installs the package itself and restarts
 Thunderbird once (it asks first; `--yes` skips the prompt, `--no-restart` leaves
 Thunderbird closed). Pass `--profile <name or directory>` for a non-default profile.
-The batch file uses the default profile; run the command by hand for a non-default profile.
+Both batch files use the profile and program of the running Thunderbird.
 
 ## Portable Thunderbird
 
-The daemon finds the portable profile automatically while Thunderbird runs. To pin it
-even when Thunderbird is closed, set `TBMCP_PROFILE=D:\Apps\ThunderbirdPortable\Data\profile`
-in the MCP server configuration. `tbmcp doctor` shows "profile chosen by" and the
-daemon's profile.
-
-For automatic add-on installation, run `tbmcp install-addon --profile
-D:\Apps\ThunderbirdPortable\Data\profile` with `TBMCP_THUNDERBIRD` set to the portable
-`thunderbird.exe`; alternatively use `tbmcp install-addon --manual`.
+`install-addon` and `refresh` take the profile and program from the running Thunderbird.
+While Thunderbird is closed, `TBMCP_PROFILE` and `TBMCP_THUNDERBIRD` provide explicit
+overrides when automatic discovery is insufficient. A program already running when
+those variables are set (the Tickets Watcher or a terminal) must be restarted to see them.
+`tbmcp doctor` shows "profile chosen by" and the daemon's profile.

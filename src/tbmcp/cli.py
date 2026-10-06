@@ -143,6 +143,60 @@ def _print_manual_install_fallback(addon_install, outcome) -> None:
     print(text, file=sys.stderr)
 
 
+def cmd_refresh(args: argparse.Namespace) -> int:
+    """Stop stale Python code and update the add-on only when its build changed."""
+    from . import addon_build, addon_install, ipc
+    from .bridge import Bridge
+    from .errors import TransportError
+    from .profile import find_profile
+
+    bridge = Bridge(profile_hint=args.profile, autostart=False)
+
+    async def refresh_daemon() -> None:
+        try:
+            status = await bridge.status()
+        except TransportError as exc:
+            # Anything else (a rejected token, an unreadable frame) is a daemon that
+            # may well be running stale code, not an absent one.
+            if exc.code != "NO_DAEMON":
+                raise
+            print("no daemon running")
+            return
+        uptime = (status.get("daemon") or {}).get("uptimeSeconds", 0)
+        if ipc.newest_source_mtime() > time.time() - uptime:
+            try:
+                await bridge.call("daemon.shutdown")
+            except TransportError as exc:
+                # The daemon hanging up before it answers is the shutdown working.
+                # `Bridge.call` reconnects once after such a drop, and with autostart
+                # off that retry reports `NO_DAEMON` — the same outcome. Any other
+                # code does not establish that it stopped.
+                if exc.code not in ("DISCONNECTED", "NO_DAEMON"):
+                    raise
+            print("daemon code is stale; the next call starts a fresh one")
+        else:
+            print("daemon is current")
+
+    try:
+        asyncio.run(refresh_daemon())
+    finally:
+        asyncio.run(bridge.close())
+
+    profile = find_profile(args.profile)
+    if profile is not None:
+        build = addon_build.build_check(profile.path)
+        if build["installed"] == build["source"]:
+            print(f"add-on build `{build['source']}` is current, Thunderbird left alone")
+            return 0
+
+    outcome = addon_install.install_automatic(profile, restart_after=addon_install.is_running())
+    print(outcome.message)
+    if not outcome.ok:
+        _print_manual_install_fallback(addon_install, outcome)
+        return 1
+    return 0
+
+
 def _doctor_ok(report: dict) -> bool:
     """Whether `doctor` actually established a working chain — not just ran.
 
@@ -610,6 +664,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-restart", action="store_true", help="leave Thunderbird closed afterwards"
     )
     install.set_defaults(func=cmd_install_addon)
+
+    refresh = subparsers.add_parser(
+        "refresh", help="restart stale daemon code and update the add-on if needed"
+    )
+    refresh.add_argument("--profile")
+    refresh.set_defaults(func=cmd_refresh)
 
     doctor = subparsers.add_parser("doctor", help="diagnose the whole chain")
     add_common(doctor)

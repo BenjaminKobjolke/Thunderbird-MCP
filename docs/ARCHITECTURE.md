@@ -100,7 +100,7 @@ addon/                      the Thunderbird add-on (built into an XPI)
   background/               non-privileged half: transport + dispatch
   experiment/               privileged half: one module per capability area
 src/tbmcp/
-  cli.py                    tbmcp serve | daemon | doctor | install-addon | setup
+  cli.py                    tbmcp serve | daemon | doctor | install-addon | refresh | setup
   daemon.py                 broker: loopback listener + add-on session
   bridge.py                 RPC envelope, timeouts, cancellation
   server.py                 MCP server construction, toolset gating
