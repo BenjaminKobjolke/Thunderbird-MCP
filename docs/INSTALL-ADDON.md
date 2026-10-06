@@ -55,7 +55,9 @@ trigger **todo done**, project **Thunderbird MCP**, action **command** with
 Without `--manual`, `install-addon` installs the package itself and restarts
 Thunderbird once (it asks first; `--yes` skips the prompt, `--no-restart` leaves
 Thunderbird closed). Pass `--profile <name or directory>` for a non-default profile.
-Both batch files use the profile and program of the running Thunderbird.
+Every open Thunderbird window is asked to close. A window that refuses, such as an
+unsaved message, stops the install after a minute and is named in the error. Nothing
+is closed by force.
 
 ## Portable Thunderbird
 

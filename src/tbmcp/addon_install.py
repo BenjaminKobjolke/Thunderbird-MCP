@@ -243,6 +243,49 @@ def is_running() -> bool:
     return bool(running_pids())
 
 
+def open_windows() -> list[tuple[int, str]]:
+    """Visible top-level windows owned by running Thunderbird processes."""
+    if sys.platform != "win32":
+        return []
+    import ctypes
+    from ctypes import wintypes
+
+    pids = set(running_pids())
+    if not pids:
+        return []
+    user32 = ctypes.windll.user32
+    callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    user32.EnumWindows.argtypes = [callback_type, wintypes.LPARAM]
+    user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+    user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+    user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    windows: list[tuple[int, str]] = []
+
+    @callback_type
+    def collect(handle, _data):
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
+        if pid.value in pids and user32.IsWindowVisible(handle):
+            title = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(handle) + 1)
+            user32.GetWindowTextW(handle, title, len(title))
+            windows.append((handle, title.value))
+        return True
+
+    # ponytail: visible windows only; tray-hidden Thunderbird needs a different close path.
+    user32.EnumWindows(collect, 0)
+    return windows
+
+
+def _ask_to_close(handle: int) -> None:
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.PostMessageW(handle, 0x0010, 0, 0)
+
+
 def _launch(exe: pathlib.Path, extra_args: list[str], profile: ThunderbirdProfile | None) -> None:
     argv = [str(exe), *extra_args]
     if profile is not None:
@@ -271,14 +314,10 @@ def _stop(timeout: float = 60.0) -> bool:
     if not is_running():
         return True
     if sys.platform == "win32":
-        # A WM_CLOSE to the main window is the graceful path; taskkill without /F
-        # sends exactly that.
-        subprocess.run(
-            ["taskkill", "/IM", "thunderbird.exe"],
-            capture_output=True,
-            check=False,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
+        # taskkill without /F asks only one window per process; a mail opened in
+        # its own window kept Thunderbird alive in command run #1083.
+        for handle, _title in open_windows():
+            _ask_to_close(handle)
     else:
         for pid in running_pids():
             try:
@@ -294,6 +333,25 @@ def _stop(timeout: float = 60.0) -> bool:
 
 
 # ------------------------------------------------------------------------ install
+
+
+def _wont_close_message() -> str:
+    if sys.platform == "win32":
+        windows = open_windows()
+        if windows:
+            titles = ", ".join(f'"{title or "(untitled)"}"' for _handle, title in windows)
+            return (
+                f"Thunderbird would not close; still open: {titles}. Finish or close them and "
+                "run this again, or use `tbmcp install-addon --manual`."
+            )
+        return (
+            "Thunderbird would not close: no visible windows remain but the process is still "
+            "running. Wait a moment and run this again, or use `tbmcp install-addon --manual`."
+        )
+    return (
+        "Thunderbird would not close. Close it yourself and run this again, or use "
+        "`tbmcp install-addon --manual`."
+    )
 
 
 def install_automatic(
@@ -316,11 +374,7 @@ def install_automatic(
 
     was_running = is_running()
     if was_running and not _stop():
-        raise TbmcpError(
-            "Thunderbird would not close. Close it yourself and run this again, or use "
-            "`tbmcp install-addon --manual`.",
-            code="WONT_CLOSE",
-        )
+        raise TbmcpError(_wont_close_message(), code="WONT_CLOSE")
 
     log.info("starting Thunderbird with automation enabled")
     _launch(exe, ["-marionette", "-remote-allow-system-access"], profile)
