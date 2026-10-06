@@ -33,3 +33,6 @@ HANDOFF.md
 tmp/commit_msg.tmp
 claude-plans
 tickets/
+graphify-out/
+code_analysis_results/
+.reasonix/
