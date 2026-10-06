@@ -321,7 +321,7 @@ and names the broken one with the command that fixes it.
 | a dependency fails to load on Windows | Windows Application Control blocked a wheel; `python bootstrap.py` repairs it |
 
 The profile is chosen from `TBMCP_PROFILE` / `--profile`, then the running Thunderbird's
-`-profile` argument, then the `profiles.ini` default.
+`-profile` argument, then the stored Windows user variable, then the `profiles.ini` default.
 
 `TBMCP_DEBUG=1` logs verbosely to stderr; `TBMCP_STATE_DIR` moves the daemon's
 files; `tb_console` returns the add-on's `[tbmcp]` lines as a tool.

@@ -9,7 +9,7 @@ Two jobs:
    Thunderbird might be writing.
 
 Profile discovery prefers the running Thunderbird's `-profile` directory, then
-follows `profiles.ini`, where a `Default=` inside an
+the stored Windows user variable, then follows `profiles.ini`, where a `Default=` inside an
 `[Install<HASH>]` section is authoritative (that is the dedicated profile of the
 installed build) and `Default=1` inside a `[Profile<N>]` section is the legacy
 fallback. On the machine this was developed against those two disagree, so the
@@ -33,6 +33,7 @@ BRIDGE_FILE = "tbmcp-bridge.json"
 SOURCE_LABELS = {
     "explicit": "set with --profile / TBMCP_PROFILE",
     "running": "taken from the running Thunderbird",
+    "user-variable": "TBMCP_PROFILE from the Windows user variables",
     "default": "the profiles.ini default",
 }
 
@@ -236,6 +237,13 @@ def find_profile(
         if running:
             path = running[0]
             return ThunderbirdProfile(path, path.name, False, path.parent.parent, "running")
+    from .addon_install import saved_user_variable
+
+    saved = saved_user_variable("TBMCP_PROFILE")
+    if saved:
+        chosen = find_profile(saved, follow_running=False)
+        if chosen is not None:
+            return replace(chosen, source="user-variable")
     return replace(profiles[0], source="default") if profiles else None
 
 

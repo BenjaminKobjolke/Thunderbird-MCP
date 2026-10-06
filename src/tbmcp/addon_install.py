@@ -138,6 +138,10 @@ def find_thunderbird() -> pathlib.Path | None:
     if running is not None:
         return running
 
+    saved = saved_user_variable("TBMCP_THUNDERBIRD")
+    if saved and pathlib.Path(saved).is_file():
+        return pathlib.Path(saved)
+
     if sys.platform == "win32":
         candidates = [
             pathlib.Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
@@ -221,6 +225,20 @@ def running_command_lines() -> list[str]:
         return []
 
 
+def saved_user_variable(name: str) -> str | None:
+    """Read variables set after the calling program started from the Windows registry."""
+    if sys.platform != "win32":
+        return None
+    import winreg
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            value, _kind = winreg.QueryValueEx(key, name)
+        return value if isinstance(value, str) and value else None
+    except OSError:
+        return None
+
+
 def is_running() -> bool:
     return bool(running_pids())
 
@@ -289,9 +307,9 @@ def install_automatic(
     if exe is None:
         raise UnsupportedError(
             "could not find thunderbird.exe. Thunderbird is not running and "
-            "TBMCP_THUNDERBIRD is not set in this process (a variable set after the "
-            "calling program started is not visible to it); start Thunderbird, set the "
-            "variable, or use `tbmcp install-addon --manual`."
+            "TBMCP_THUNDERBIRD is set neither in this process nor in the Windows user "
+            "variables; start Thunderbird, set the variable, or use "
+            "`tbmcp install-addon --manual`."
         )
     package = xpi or build_xpi(state_dir() / "addon")
     identifier = addon_id()

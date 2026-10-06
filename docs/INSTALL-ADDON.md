@@ -60,7 +60,7 @@ Both batch files use the profile and program of the running Thunderbird.
 ## Portable Thunderbird
 
 `install-addon` and `refresh` take the profile and program from the running Thunderbird.
-While Thunderbird is closed, `TBMCP_PROFILE` and `TBMCP_THUNDERBIRD` provide explicit
-overrides when automatic discovery is insufficient. A program already running when
-those variables are set (the Tickets Watcher or a terminal) must be restarted to see them.
+While Thunderbird is closed, `TBMCP_PROFILE` and `TBMCP_THUNDERBIRD` select the profile
+and program, first from the current process and then, on Windows, from the stored user
+variables. A program started before those variables were set can still read them.
 `tbmcp doctor` shows "profile chosen by" and the daemon's profile.

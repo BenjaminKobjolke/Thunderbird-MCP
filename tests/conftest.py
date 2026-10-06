@@ -102,3 +102,4 @@ def reset_settings():
 @pytest.fixture(autouse=True)
 def no_running_command_lines(monkeypatch):
     monkeypatch.setattr(addon_install, "running_command_lines", lambda: [])
+    monkeypatch.setattr(addon_install, "saved_user_variable", lambda _name: None)

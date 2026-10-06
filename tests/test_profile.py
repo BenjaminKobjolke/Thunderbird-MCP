@@ -88,6 +88,33 @@ def test_windows_portable_line_and_equivalent_profile_path():
         assert "but the running Thunderbird uses" not in describe_profile(status, running=True)
 
 
+def test_saved_profile_precedence_and_source_labels(tmp_path, monkeypatch):
+    from tbmcp import addon_install
+    from tbmcp.profile import SOURCE_LABELS, find_profile
+
+    saved = tmp_path / "saved"
+    running = tmp_path / "running"
+    explicit = tmp_path / "explicit"
+    for path in (saved, running, explicit):
+        path.mkdir()
+    monkeypatch.delenv("TBMCP_PROFILE", raising=False)
+    monkeypatch.setattr("tbmcp.profile.list_profiles", lambda: [])
+    monkeypatch.setattr(addon_install, "saved_user_variable", lambda _name: str(saved))
+    monkeypatch.setattr(addon_install, "running_command_lines", lambda: [])
+    chosen = find_profile()
+    assert chosen.path == saved and chosen.source == "user-variable"
+    assert find_profile(follow_running=False).source == "user-variable"
+    monkeypatch.setattr(
+        addon_install, "running_command_lines", lambda: [f'thunderbird -profile "{running}"']
+    )
+    chosen = find_profile()
+    assert chosen.path == running and chosen.source == "running"
+    monkeypatch.setenv("TBMCP_PROFILE", str(explicit))
+    chosen = find_profile()
+    assert chosen.path == explicit and chosen.source == "explicit"
+    assert {"explicit", "running", "default", "user-variable"} <= SOURCE_LABELS.keys()
+
+
 def _write(path: pathlib.Path, text: str) -> pathlib.Path:
     path.write_text(text, encoding="utf-8")
     return path
