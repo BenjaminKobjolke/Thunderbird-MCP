@@ -6,6 +6,19 @@ Reproduce with `probe/` (see [`probe/README.md`](../probe/README.md)).
 Environment: Thunderbird `153.0`, buildID `20260717002111`, channel `release`,
 `MOZ_BUILD_APP=comm/mail`, Windows 11 Pro 26200, Python 3.14.
 
+## Empty body on the headless path (Thunderbird 153.4.0 source)
+
+Read from the portable build's `omni.ja` source, not measured with a live save
+or send. `ext-messages.js::doMsgOperation` assigns
+`msgCompose.compFields.body = details.plainTextBody || details.body` for plain
+text. With no compose editor, `MessageSend.sys.mjs::createAndSendMessage` uses
+`let bodyText = this._getBodyFromEditor(editor) || body` and then
+`new TextEncoder().encode(bodyText)`. A missing body, or an explicit empty plain
+text body, can therefore encode the word `null`. Missing HTML also takes that
+plain-text path; an explicit empty HTML body uses `details.body` directly.
+The add-on now supplies both empty body fields for headless plain text, or an
+empty HTML body with `isPlainText: false`.
+
 ## Inline images in Thunderbird 153.3.1 source
 
 These findings come from reading the portable build's `omni.ja` source, not from

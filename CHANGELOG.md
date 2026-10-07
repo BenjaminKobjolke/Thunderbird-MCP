@@ -16,6 +16,8 @@
 
 ### Fixed
 
+- `mail_draft_save` and `mail_send` no longer write `null` as the body when
+  the body is missing or empty.
 - `install-addon`, `refresh` and `tools/tb_console.py` ask every Thunderbird window to
   close and find a closed portable install and its profile from Windows user variables.
   `install-addon` names windows that refuse to close; `tools\refresh_live.bat` no longer

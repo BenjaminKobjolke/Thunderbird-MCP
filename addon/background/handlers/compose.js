@@ -516,6 +516,14 @@
     }
     if (canHeadless(mode) && !needsImageWindow(params)) {
       const details = await detailsFrom(params);
+      if (!details.plainTextBody && !details.body) {
+        // Thunderbird's plainTextBody || body otherwise passes null to the MIME encoder.
+        details.body = "";
+        details.isPlainText = !params.isHtml;
+        if (!params.isHtml) {
+          details.plainTextBody = "";
+        }
+      }
       const since = Date.now() - 2000;
       const result = isSave(mode)
         ? await browser.messages.saveMessage(details, { mode: SAVE_MODE[mode] })

@@ -137,3 +137,43 @@ it("leaves an absent draft unidentified without failing the save", async () => {
   const result = await handlers.get("compose.save")({ subject: "photo" });
   assert.equal(result.messageId, null);
 });
+
+it("passes empty bodies explicitly to headless save and send", async () => {
+  for (const [handler, params, expected] of [
+    ["compose.save", { subject: "empty" }, { body: "", plainTextBody: "", isPlainText: true }],
+    ["compose.save", { subject: "empty", body: "" }, { body: "", plainTextBody: "", isPlainText: true }],
+    ["compose.send", { mode: "send", body: "" }, { body: "", plainTextBody: "", isPlainText: true }],
+    ["compose.save", { isHtml: true }, { body: "", isPlainText: false }],
+  ]) {
+    const { handlers, browser } = setup();
+    let details;
+    browser.messages.saveMessage = browser.messages.sendMessage = async (value) => {
+      details = value;
+      return { messages: [] };
+    };
+    const result = await handlers.get(handler)(params);
+    assert.equal(result.transport, "headless");
+    for (const [key, value] of Object.entries(expected)) {
+      assert.equal(details[key], value, `${handler}: ${key}`);
+    }
+  }
+});
+
+it("preserves nonempty headless text and absent window bodies", async () => {
+  const { handlers, browser, current } = setup();
+  let details;
+  browser.messages.saveMessage = async (value) => {
+    details = value;
+    return { messages: [] };
+  };
+  await handlers.get("compose.save")({ body: "hello" });
+  assert.equal(details.plainTextBody, "hello");
+  assert.equal(details.isPlainText, true);
+  assert.equal(Object.hasOwn(details, "body"), false);
+
+  browser.compose.getComposeState = async () => ({});
+  await handlers.get("compose.open")({ subject: "window" });
+  for (const key of ["body", "plainTextBody", "isPlainText"]) {
+    assert.equal(Object.hasOwn(current(), key), false);
+  }
+});
