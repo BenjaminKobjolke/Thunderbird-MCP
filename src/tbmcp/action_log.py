@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import functools
 import json
 import logging
+import re
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -19,10 +21,24 @@ from .safety import NO_CHANNEL, Consent
 
 log = logging.getLogger("tbmcp.actions")
 ARG_TEXT_LIMIT = 2_000
+RETENTION_DAYS = 30
+
+
+def _name(day: datetime) -> str:
+    return f"actions-{day:%Y-%m-%d}.jsonl"
 
 
 def path() -> Path:
-    return ipc.state_dir() / f"actions-{datetime.now(UTC):%Y-%m}.jsonl"
+    return ipc.state_dir() / _name(datetime.now(UTC))
+
+
+def _prune() -> None:
+    cutoff = _name(datetime.now(UTC) - timedelta(days=RETENTION_DAYS))
+    for file in ipc.state_dir().glob("actions-*.jsonl"):
+        # A monthly name sorts after its own month's daily names and before the next month.
+        if re.fullmatch(r"actions-\d{4}-\d{2}(?:-\d{2})?\.jsonl", file.name) and file.name < cutoff:
+            with contextlib.suppress(OSError):
+                file.unlink(missing_ok=True)
 
 
 def _clip(value: Any) -> Any:
@@ -49,6 +65,7 @@ def append(entry: dict[str, Any]) -> None:
             stream.write(line)
         if created:
             ipc._restrict_permissions(target)
+            _prune()
     except Exception:
         log.warning("Could not append action log entry", exc_info=True)
 

@@ -12,7 +12,7 @@ after it is written.
 | `daemon.json` | state dir | `ipc.py::DaemonInfo.write` | yes, on every daemon start |
 | `daemon.lock` | state dir | `ipc.py::DaemonLock` | no (created with `O_EXCL`) |
 | `daemon.log` | state dir | `cli.py` (log handler) | no (rotated) |
-| `actions-YYYY-MM.jsonl` | state dir | `action_log.py::append` | no (appended, never replaced) |
+| `actions-YYYY-MM-DD.jsonl` | state dir | `action_log.py::append` | no (appended; deleted after 30 days) |
 
 The state dir is `%LOCALAPPDATA%\tbmcp` on Windows,
 `~/Library/Application Support/tbmcp` on macOS and `$XDG_STATE_HOME/tbmcp`

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 from mcp import Client
 
-from tbmcp import action_log
+from tbmcp import action_log, ipc
 from tbmcp.config import Settings
 from tbmcp.errors import ThunderbirdError
 from tbmcp.safety import NO_CHANNEL, Consent
@@ -36,7 +37,7 @@ async def test_write_is_logged_once_and_read_is_not(fake_bridge):
         write = await client.call_tool("mail_delete", {"message_ids": [42], "confirm": True})
         read = await client.call_tool("mail_tags", {})
     assert not write.is_error and not read.is_error
-    assert action_log.path().name == f"actions-{datetime.now(UTC):%Y-%m}.jsonl"
+    assert action_log.path().name == f"actions-{datetime.now(UTC):%Y-%m-%d}.jsonl"
     entries = _entries()
     assert len(entries) == 1
     assert entries[0] == {
@@ -112,6 +113,40 @@ async def test_log_failure_does_not_fail_the_tool(monkeypatch, tmp_path):
         return {"changed": True}
 
     assert await action_log.recorded(fake_tool)() == {"changed": True}
+
+
+def test_first_write_of_a_day_removes_files_older_than_30_days():
+    today = datetime.now(UTC)
+    state = ipc.state_dir()
+    old_daily = state / f"actions-{today - timedelta(days=31):%Y-%m-%d}.jsonl"
+    kept_daily = state / f"actions-{today - timedelta(days=30):%Y-%m-%d}.jsonl"
+    old_monthly = state / "actions-2020-01.jsonl"
+    kept_monthly = state / f"actions-{today:%Y-%m}.jsonl"
+    unrelated = state / "actions-2020-backup.jsonl"
+    daemon_log = state / "daemon.log"
+    for file in (old_daily, kept_daily, old_monthly, kept_monthly, unrelated, daemon_log):
+        file.touch()
+
+    action_log.append({"tool": "x"})
+
+    assert not old_daily.exists()
+    assert not old_monthly.exists()
+    assert all(file.exists() for file in (kept_daily, kept_monthly, unrelated, daemon_log))
+    assert _entries() == [{"tool": "x"}]
+
+
+def test_cleanup_failure_does_not_lose_the_entry(monkeypatch):
+    old_daily = ipc.state_dir() / f"actions-{datetime.now(UTC) - timedelta(days=31):%Y-%m-%d}.jsonl"
+    old_daily.touch()
+
+    def fail_unlink(_self, *, missing_ok=False):
+        raise PermissionError("locked")
+
+    monkeypatch.setattr(Path, "unlink", fail_unlink)
+    action_log.append({"tool": "x"})
+
+    assert old_daily.exists()
+    assert _entries() == [{"tool": "x"}]
 
 
 async def test_cancellation_is_logged_and_still_propagates(fake_bridge):

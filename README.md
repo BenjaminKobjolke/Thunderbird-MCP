@@ -326,11 +326,12 @@ The profile is chosen from `TBMCP_PROFILE` / `--profile`, then the running Thund
 `TBMCP_DEBUG=1` logs verbosely to stderr; `TBMCP_STATE_DIR` moves the daemon's
 files; `tb_console` returns the add-on's `[tbmcp]` lines as a tool.
 
-**Action log:** Every write tool call appends one line to `actions-YYYY-MM.jsonl` in
-the state directory. Each entry records the time, tool, arguments, outcome, and
-reply or error; replies include earlier values when available. The log can hold
-private mail content. It is never rotated or deleted automatically; delete old
-months by hand when you no longer need their undo data.
+**Action log:** Every write tool call appends one line to `actions-YYYY-MM-DD.jsonl`
+in the state directory, one file per UTC day. Each entry records the time, tool,
+arguments, outcome, and reply or error; replies include earlier values when
+available. The log can hold private mail content. Files older than 30 days are
+deleted automatically on the first write of a new day, so undo data is available
+for 30 days. Copy a file elsewhere to keep it longer.
 
 ## Requirements
 
