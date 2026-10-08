@@ -25,7 +25,7 @@ settings 11, admin 7. `tbmcp tools --toolsets all` prints the live list.
 | `mail_get_many` | `messages.readMany` | ≤50 ids, progress-reporting |
 | `mail_get_source` | `messages.raw` | needs offline copy on IMAP |
 | `mail_attachments` | `messages.listAttachments` | |
-| `mail_save_attachment` | `messages.saveAttachment` → `x.files.write` | writes to disk |
+| `mail_save_attachment` | `messages.saveAttachment` → `x.files.write` | writes to disk; gated, interactive |
 | `mail_mark` | `messages.mark` | read/flagged/junk/tags; no confirmation; reports earlier state per message |
 | `mail_move` | `messages.move` | gated; folder config rules can skip confirmation; reports each source and observed landing |
 | `mail_copy` | `messages.copy` | gated; reports each source and observed copy location |
