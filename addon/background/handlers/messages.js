@@ -56,6 +56,59 @@
     };
   }
 
+  function locator(message) {
+    return { id: message.id, headerMessageId: message.headerMessageId,
+      folderId: message.folder ? message.folder.id : undefined };
+  }
+
+  async function snapshot(ids) {
+    const results = await tbxUtil.mapLimited(ids, BULK_CONCURRENCY, (id) => browser.messages.get(id));
+    return tbxUtil.partition(results).values.map(locator);
+  }
+
+  async function landed(event, wanted, run) {
+    // shortcut: some IMAP servers omit landing events; look up by Message-ID for automatic undo.
+    if (!event) return { result: await run(), messages: [] };
+    const messages = [];
+    const seen = new Set();
+    const key = (message) => JSON.stringify([message.id, message.folderId]);
+    const requested = new Set(wanted.map(key));
+    let finish;
+    const complete = new Promise((resolve) => { finish = resolve; });
+    const listener = (originals, moved) => {
+      Promise.resolve().then(async () => {
+        let page = Array.isArray(moved) ? { messages: moved } : moved;
+        let offset = 0;
+        while (page) {
+          for (const [index, message] of (page.messages || []).entries()) {
+            const original = originals && originals[offset + index];
+            if (original && requested.has(key(locator(original)))) {
+              messages.push(locator(message));
+              seen.add(key(locator(original)));
+            }
+          }
+          offset += (page.messages || []).length;
+          page = page.id ? await browser.messages.continueList(page.id) : null;
+        }
+        if ([...requested].every((id) => seen.has(id))) finish();
+      }).catch(() => {}); // Landing information is best effort.
+    };
+    event.addListener(listener);
+    let timer;
+    try {
+      const result = await run();
+      if (requested.size && ![...requested].every((id) => seen.has(id))) {
+        await Promise.race([complete, new Promise((resolve) => {
+          timer = setTimeout(resolve, 1000);
+        })]);
+      }
+      return { result, messages };
+    } finally {
+      clearTimeout(timer);
+      event.removeListener(listener);
+    }
+  }
+
   /* Pages we stopped part-way through, by the cursor we minted for them. Bounded,
    * because a caller that walks away from a search must not pin its messages —
    * and its Thunderbird list — for the rest of the session. */
@@ -514,6 +567,7 @@
     const removeTags = params.removeTags || [];
     let done = 0;
     const results = await tbxUtil.mapLimited(ids, BULK_CONCURRENCY, async (id) => {
+      const current = await browser.messages.get(id);
       const properties = {};
       if (params.read !== null && params.read !== undefined) {
         properties.read = params.read;
@@ -525,7 +579,6 @@
         properties.junk = params.junk;
       }
       if (addTags.length || removeTags.length) {
-        const current = await browser.messages.get(id);
         const next = new Set(current.tags || []);
         for (const tag of addTags) {
           next.add(tag);
@@ -538,39 +591,40 @@
       await browser.messages.update(id, properties);
       done += 1;
       ctx.progress(done, ids.length, "updating messages");
-      return id;
+      return { ...locator(current), read: current.read, flagged: current.flagged,
+        junk: current.junk, tags: current.tags || [] };
     });
     const { values, failures } = tbxUtil.partition(results);
-    return { updated: values.length, failures };
+    return { updated: values.length, failures, previous: values };
   });
 
   tbxRegistry.define("messages.move", async (params) => {
     const ids = tbxUtil.need(params, "messageIds", "array");
     const destination = tbxUtil.need(params, "destinationFolderId", "string");
-    // Capture the source folders first: after the move the ids are gone, and the
-    // Python side reports them so a user can undo by hand.
-    const sources = await tbxUtil.mapLimited(ids, BULK_CONCURRENCY, async (id) => {
-      const message = await browser.messages.get(id);
-      return message.folder ? message.folder.id : null;
-    });
+    const previous = await snapshot(ids);
     const sourceFolderIds = [
-      ...new Set(tbxUtil.partition(sources).values.filter(Boolean)),
+      ...new Set(previous.map((message) => message.folderId).filter(Boolean)),
     ];
-    await browser.messages.move(ids, destination);
-    return { moved: ids.length, sourceFolderIds };
+    const { messages } = await landed(browser.messages.onMoved, previous,
+      () => browser.messages.move(ids, destination));
+    return { moved: ids.length, sourceFolderIds, previous, landed: messages };
   });
 
   tbxRegistry.define("messages.copy", async (params) => {
     const ids = tbxUtil.need(params, "messageIds", "array");
     const destination = tbxUtil.need(params, "destinationFolderId", "string");
-    await browser.messages.copy(ids, destination);
-    return { copied: ids.length };
+    const previous = await snapshot(ids);
+    const { messages } = await landed(browser.messages.onCopied, previous,
+      () => browser.messages.copy(ids, destination));
+    return { copied: ids.length, previous, landed: messages };
   });
 
   tbxRegistry.define("messages.archive", async (params) => {
     const ids = tbxUtil.need(params, "messageIds", "array");
-    await browser.messages.archive(ids);
-    return { archived: ids.length };
+    const previous = await snapshot(ids);
+    const { messages } = await landed(browser.messages.onMoved, previous,
+      () => browser.messages.archive(ids));
+    return { archived: ids.length, previous, landed: messages };
   });
 
   tbxRegistry.define("messages.delete", async (params) => {

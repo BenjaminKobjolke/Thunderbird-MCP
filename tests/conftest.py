@@ -22,6 +22,11 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
+@pytest.fixture(autouse=True)
+def isolated_state_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("TBMCP_STATE_DIR", str(tmp_path))
+
+
 class FakeBridge:
     """Stands in for the daemon connection.
 

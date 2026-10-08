@@ -233,7 +233,7 @@ def page(
 def changed(what: str, before: Any, after: Any, **extra: Any) -> dict[str, Any]:
     """Uniform envelope for a write, including what it replaced.
 
-    Reporting `before` is what makes an undo possible without a transaction log.
+    The action log stores `before` so the write can be undone later.
     """
     return {"changed": True, "target": what, "previous": before, "current": after, **extra}
 

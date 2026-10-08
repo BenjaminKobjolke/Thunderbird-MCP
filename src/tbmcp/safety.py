@@ -50,7 +50,7 @@ class Consent(BaseModel):
         default=False,
         description="Approve this action. Answer no to abort without any change.",
     )
-    note: str | None = Field(default=None, description="Optional note recorded in the server log.")
+    note: str | None = Field(default=None, description="Optional note recorded in the action log.")
 
 
 #: Marks "there was no way to ask" as distinct from "the user said no". The

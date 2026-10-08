@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { fakeBrowser, fakeMessages, loadScript } from "./harness.mjs";
+import { fakeBrowser, fakeClock, fakeMessages, loadScript } from "./harness.mjs";
 
 const FOLDER = "account1://Inbox";
 
@@ -37,7 +37,7 @@ function sample(count, folderId = FOLDER) {
  * The real registry.js supplies tbxError and tbxUtil so failures carry the same
  * shape the daemon sees; tbxRegistry is faked only to catch the definitions.
  */
-function loadHandlers(messages, folders = []) {
+function loadHandlers(messages, folders = [], clock = globalThis) {
   const registry = loadScript("background/registry.js");
   const browser = fakeBrowser({ folders });
   const handlers = new Map();
@@ -46,6 +46,8 @@ function loadHandlers(messages, folders = []) {
     browser,
     tbxError: registry.tbxError,
     tbxUtil: registry.tbxUtil,
+    setTimeout: clock.setTimeout,
+    clearTimeout: clock.clearTimeout,
     tbxRegistry: {
       define(method, fn) {
         handlers.set(method, fn);
@@ -54,6 +56,146 @@ function loadHandlers(messages, folders = []) {
   });
   return handlers;
 }
+
+function event() {
+  const listeners = new Set();
+  return {
+    addListener: (listener) => listeners.add(listener),
+    removeListener: (listener) => listeners.delete(listener),
+    fire: (originals, messages) => { for (const listener of listeners) listener(originals, messages); },
+    get size() { return listeners.size; },
+  };
+}
+
+function writableMessages(headers = sample(2)) {
+  const byId = new Map(headers.map((message) => [message.id, message]));
+  return {
+    onMoved: event(), onCopied: event(),
+    get: async (id) => ({ ...byId.get(id), tags: [...byId.get(id).tags] }),
+    update: async (id, properties) => Object.assign(byId.get(id), properties),
+    move: async () => {}, copy: async () => {}, archive: async () => {},
+  };
+}
+
+describe("message write history", () => {
+  it("mark returns the state before updating each message, including tags", async () => {
+    const messages = writableMessages();
+    const mark = loadHandlers(messages).get("messages.mark");
+    const result = plain(await mark({ messageIds: [100, 101], read: true,
+      addTags: ["new"] }, { progress() {} }));
+    assert.equal(result.updated, 2);
+    assert.deepEqual(result.failures, []);
+    assert.deepEqual(result.previous, [100, 101].map((id, index) => ({
+      id, headerMessageId: `<m${index}@example.invalid>`, folderId: FOLDER,
+      read: false, flagged: false, junk: false, tags: [],
+    })));
+    assert.equal((await messages.get(100)).read, true);
+    assert.deepEqual((await messages.get(100)).tags, ["new"]);
+  });
+
+  it("move reports each source and landing message from an array event", async () => {
+    const messages = writableMessages([sample(1)[0],
+      { ...sample(1, "account1://Other")[0], id: 101,
+        headerMessageId: "<other@example.invalid>" }]);
+    const originals = [sample(1)[0],
+      { id: 999, headerMessageId: "<unrelated@example.invalid>", folder: { id: "elsewhere" } },
+      { ...sample(1, "account1://Other")[0], id: 101,
+        headerMessageId: "<other@example.invalid>" }];
+    messages.move = async () => messages.onMoved.fire(originals, [
+      { ...sample(1, "account1://Archive")[0], id: 201 },
+      { id: 999, headerMessageId: "<unrelated@example.invalid>", folder: { id: "elsewhere" } },
+      { id: 202, headerMessageId: "<other@example.invalid>", folder: { id: "account1://Archive" } },
+    ]);
+    const move = loadHandlers(messages).get("messages.move");
+    const result = plain(await move({ messageIds: [100, 101],
+      destinationFolderId: "account1://Archive" }));
+    assert.equal(result.moved, 2);
+    assert.deepEqual(result.sourceFolderIds, [FOLDER, "account1://Other"]);
+    assert.deepEqual(result.previous.map((message) => message.folderId),
+      [FOLDER, "account1://Other"]);
+    assert.deepEqual(result.landed.map((message) => message.id), [201, 202]);
+    assert.deepEqual(result.landed.map((message) => message.folderId),
+      ["account1://Archive", "account1://Archive"]);
+    assert.equal(messages.onMoved.size, 0);
+  });
+
+  it("move reads every page of a MessageList event", async () => {
+    const messages = writableMessages();
+    messages.continueList = async (id) => {
+      assert.equal(id, "next");
+      return { messages: [{ ...sample(1)[0], id: 202,
+        headerMessageId: "<m1@example.invalid>", folder: { id: "account1://Archive" } }] };
+    };
+    messages.move = async () => messages.onMoved.fire(sample(2), { id: "next", messages: [
+      { ...sample(1)[0], id: 201, folder: { id: "account1://Archive" } },
+    ] });
+    const result = plain(await loadHandlers(messages).get("messages.move")({
+      messageIds: [100, 101], destinationFolderId: "account1://Archive",
+    }));
+    assert.deepEqual(result.landed.map((message) => message.id), [201, 202]);
+  });
+
+  it("copy and archive report their source and landing folders", async () => {
+    const messages = writableMessages();
+    messages.copy = async () => messages.onCopied.fire(sample(1), [{ ...sample(1)[0], id: 301,
+      folder: { id: "account1://Copies" } }]);
+    messages.archive = async () => messages.onMoved.fire(sample(1), [{ ...sample(1)[0], id: 401,
+      folder: { id: "account1://Archives" } }]);
+    const handlers = loadHandlers(messages);
+    const copied = plain(await handlers.get("messages.copy")({ messageIds: [100],
+      destinationFolderId: "account1://Copies" }));
+    const archived = plain(await handlers.get("messages.archive")({ messageIds: [100] }));
+    assert.equal(copied.copied, 1);
+    assert.equal(archived.archived, 1);
+    assert.equal(copied.previous[0].folderId, FOLDER);
+    assert.equal(archived.previous[0].folderId, FOLDER);
+    assert.equal(copied.landed[0].folderId, "account1://Copies");
+    assert.equal(archived.landed[0].folderId, "account1://Archives");
+  });
+
+  it("succeeds and removes the listener when Thunderbird sends no event", async () => {
+    const clock = fakeClock();
+    const messages = writableMessages();
+    const pending = loadHandlers(messages, [], clock).get("messages.copy")({
+      messageIds: [100], destinationFolderId: "account1://Copies",
+    });
+    await clock.advance(0);
+    await clock.advance(1000);
+    assert.deepEqual(plain((await pending).landed), []);
+    assert.equal(messages.onCopied.size, 0);
+  });
+
+  it("succeeds when Thunderbird has no copy event", async () => {
+    const messages = writableMessages();
+    delete messages.onCopied;
+    const result = plain(await loadHandlers(messages).get("messages.copy")({
+      messageIds: [100], destinationFolderId: "account1://Copies",
+    }));
+    assert.equal(result.copied, 1);
+    assert.deepEqual(result.landed, []);
+  });
+
+  it("matches landing events to source id and folder, including duplicate Message-IDs", async () => {
+    const headers = sample(2);
+    headers[1].headerMessageId = headers[0].headerMessageId;
+    const messages = writableMessages(headers);
+    messages.copy = async () => {
+      messages.onCopied.fire([
+        { ...headers[0], id: 999, folder: { id: "account1://Other" } },
+      ], [{ ...headers[0], id: 300, folder: { id: "account1://Wrong" } }]);
+      messages.onCopied.fire([headers[0]], [
+        { ...headers[0], id: 301, folder: { id: "account1://Copies" } },
+      ]);
+      messages.onCopied.fire([headers[1]], [
+        { ...headers[1], id: 302, folder: { id: "account1://Copies" } },
+      ]);
+    };
+    const result = plain(await loadHandlers(messages).get("messages.copy")({
+      messageIds: [100, 101], destinationFolderId: "account1://Copies",
+    }));
+    assert.deepEqual(result.landed.map((message) => message.id), [301, 302]);
+  });
+});
 
 /** Values built inside the vm carry that realm's prototypes; strip them. */
 function plain(value) {

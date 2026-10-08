@@ -308,6 +308,7 @@ def register(reg: Registrar) -> None:
 
         Cheap and reversible, so no confirmation is required. Tag keys come from
         `mail_tags`.
+        The reply reports each updated message's earlier flags and tags for undo.
         """
         guard_write("change message flags")
         ids = require_ids(message_ids)
@@ -327,10 +328,21 @@ def register(reg: Registrar) -> None:
             },
             timeout=90.0,
         )
-        return {
-            "updated": result.get("updated", len(ids)),
-            "failures": result.get("failures") or [],
-        }
+        return changed(
+            "messages.mark",
+            before={"messages": result.get("previous") or []},
+            after={
+                **{
+                    key: value
+                    for key, value in (("read", read), ("flagged", flagged), ("junk", junk))
+                    if value is not None
+                },
+                "addTags": add_tags or [],
+                "removeTags": remove_tags or [],
+            },
+            updated=result.get("updated", len(ids)),
+            failures=result.get("failures") or [],
+        )
 
     @reg.write_tool(
         title="Move messages",
@@ -349,6 +361,7 @@ def register(reg: Registrar) -> None:
         On IMAP the move is asynchronous — the tool waits for Thunderbird to confirm
         before returning, so a following search reflects the change.
         Moves allowed in the tbmcp config skip confirmation.
+        The reply reports each message's source and any observed landing folder for undo.
         """
         guard_write("move messages")
         ids = require_ids(message_ids)
@@ -364,8 +377,12 @@ def register(reg: Registrar) -> None:
         )
         return changed(
             "messages.move",
-            before={"messageIds": ids, "folderIds": result.get("sourceFolderIds")},
-            after={"folderId": destination_folder_id},
+            before={
+                "messageIds": ids,
+                "folderIds": result.get("sourceFolderIds"),
+                "messages": result.get("previous") or [],
+            },
+            after={"folderId": destination_folder_id, "messages": result.get("landed") or []},
             moved=result.get("moved", len(ids)),
             note="Message ids change after a move; re-query to get the new ones.",
         )
@@ -377,7 +394,10 @@ def register(reg: Registrar) -> None:
         confirm: bool = False,
         consent: Gate("copy these messages to another folder") = None,  # type: ignore[valid-type]
     ) -> dict[str, Any]:
-        """Copy messages into another folder, leaving the originals in place."""
+        """Copy messages into another folder, leaving the originals in place.
+
+        The reply reports each source and any observed copy location for undo.
+        """
         guard_write("copy messages")
         ids = require_ids(message_ids)
         require(consent, "copy these messages")
@@ -386,10 +406,13 @@ def register(reg: Registrar) -> None:
             {"messageIds": ids, "destinationFolderId": destination_folder_id},
             timeout=180.0,
         )
-        return {
-            "copied": result.get("copied", len(ids)),
-            "destinationFolderId": destination_folder_id,
-        }
+        return changed(
+            "messages.copy",
+            before={"messages": result.get("previous") or []},
+            after={"folderId": destination_folder_id, "messages": result.get("landed") or []},
+            copied=result.get("copied", len(ids)),
+            destinationFolderId=destination_folder_id,
+        )
 
     @reg.write_tool(title="Archive messages", annotations=MUTATING)
     async def mail_archive(
@@ -397,12 +420,20 @@ def register(reg: Registrar) -> None:
         confirm: bool = False,
         consent: Gate("archive these messages") = None,  # type: ignore[valid-type]
     ) -> dict[str, Any]:
-        """Archive messages using each account's configured archive layout."""
+        """Archive messages using each account's configured archive layout.
+
+        The reply reports each source and any observed archive location for undo.
+        """
         guard_write("archive messages")
         ids = require_ids(message_ids)
         require(consent, "archive these messages")
         result = await call("messages.archive", {"messageIds": ids}, timeout=180.0)
-        return {"archived": result.get("archived", len(ids))}
+        return changed(
+            "messages.archive",
+            before={"messages": result.get("previous") or []},
+            after={"messages": result.get("landed") or []},
+            archived=result.get("archived", len(ids)),
+        )
 
     @reg.write_tool(title="Delete messages", annotations=DESTRUCTIVE)
     async def mail_delete(

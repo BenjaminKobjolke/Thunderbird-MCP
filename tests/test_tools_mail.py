@@ -203,6 +203,32 @@ async def test_mark_is_not_gated(fake_bridge) -> None:
     assert bridge.params_for("messages.mark")["read"] is True
 
 
+async def test_mark_reports_previous_state_and_requested_changes(fake_bridge) -> None:
+    previous = [
+        {
+            "id": 1,
+            "headerMessageId": "<one@example.com>",
+            "folderId": "inbox",
+            "read": False,
+            "flagged": False,
+            "junk": False,
+            "tags": ["old"],
+        }
+    ]
+    bridge = fake_bridge({"messages.mark": {"updated": 1, "failures": [2], "previous": previous}})
+    async with Client(_server(bridge)) as client:
+        result = await client.call_tool(
+            "mail_mark",
+            {"message_ids": [1, 2], "read": True, "add_tags": ["new"], "remove_tags": ["old"]},
+        )
+    assert not result.is_error, _text(result)
+    payload = result.structured_content
+    assert payload["previous"] == {"messages": previous}
+    assert payload["current"] == {"read": True, "addTags": ["new"], "removeTags": ["old"]}
+    assert payload["updated"] == 1
+    assert payload["failures"] == [2]
+
+
 async def test_empty_id_list_is_rejected(fake_bridge) -> None:
     bridge = fake_bridge()
     async with Client(_server(bridge)) as client:
@@ -246,6 +272,87 @@ async def test_move_reports_the_source_folders(fake_bridge) -> None:
     assert payload["current"]["folderId"] == "account1://Archive"
     assert "re-query" in payload["note"]
     assert bridge.params_for("messages.move")["destinationFolderId"] == "account1://Archive"
+
+
+async def test_move_reports_each_source_and_landing(fake_bridge) -> None:
+    previous = [{"id": 1, "headerMessageId": "<one@example.com>", "folderId": "inbox"}]
+    landed = [{"id": 10, "headerMessageId": "<one@example.com>", "folderId": "archive"}]
+    bridge = fake_bridge(
+        {
+            "messages.move": {
+                "moved": 1,
+                "sourceFolderIds": ["inbox"],
+                "previous": previous,
+                "landed": landed,
+            }
+        }
+    )
+    async with Client(_server(bridge)) as client:
+        result = await client.call_tool(
+            "mail_move", {"message_ids": [1], "destination_folder_id": "archive", "confirm": True}
+        )
+    assert not result.is_error, _text(result)
+    payload = result.structured_content
+    assert payload["previous"] == {"messageIds": [1], "folderIds": ["inbox"], "messages": previous}
+    assert payload["current"] == {"folderId": "archive", "messages": landed}
+    assert payload["moved"] == 1
+
+
+async def test_copy_reports_source_and_copies(fake_bridge) -> None:
+    previous = [{"id": 1, "headerMessageId": "<one@example.com>", "folderId": "inbox"}]
+    landed = [{"id": 10, "headerMessageId": "<one@example.com>", "folderId": "archive"}]
+    bridge = fake_bridge({"messages.copy": {"copied": 1, "previous": previous, "landed": landed}})
+    async with Client(_server(bridge)) as client:
+        result = await client.call_tool(
+            "mail_copy", {"message_ids": [1], "destination_folder_id": "archive", "confirm": True}
+        )
+    assert not result.is_error, _text(result)
+    payload = result.structured_content
+    assert payload["previous"] == {"messages": previous}
+    assert payload["current"] == {"folderId": "archive", "messages": landed}
+    assert payload["copied"] == 1
+    assert payload["destinationFolderId"] == "archive"
+
+
+async def test_archive_reports_source_and_landing(fake_bridge) -> None:
+    previous = [{"id": 1, "headerMessageId": "<one@example.com>", "folderId": "inbox"}]
+    landed = [{"id": 10, "headerMessageId": "<one@example.com>", "folderId": "archive"}]
+    bridge = fake_bridge(
+        {"messages.archive": {"archived": 1, "previous": previous, "landed": landed}}
+    )
+    async with Client(_server(bridge)) as client:
+        result = await client.call_tool("mail_archive", {"message_ids": [1], "confirm": True})
+    assert not result.is_error, _text(result)
+    payload = result.structured_content
+    assert payload["previous"] == {"messages": previous}
+    assert payload["current"] == {"messages": landed}
+    assert payload["archived"] == 1
+
+
+async def test_mail_writes_accept_older_handler_replies(fake_bridge) -> None:
+    bridge = fake_bridge(
+        {
+            "messages.mark": {"updated": 1},
+            "messages.move": {"moved": 1, "sourceFolderIds": ["inbox"]},
+            "messages.copy": {"copied": 1},
+            "messages.archive": {"archived": 1},
+        }
+    )
+    async with Client(_server(bridge)) as client:
+        mark = await client.call_tool("mail_mark", {"message_ids": [1], "read": True})
+        move = await client.call_tool(
+            "mail_move", {"message_ids": [1], "destination_folder_id": "archive", "confirm": True}
+        )
+        copy = await client.call_tool(
+            "mail_copy", {"message_ids": [1], "destination_folder_id": "archive", "confirm": True}
+        )
+        archive = await client.call_tool("mail_archive", {"message_ids": [1], "confirm": True})
+    for result in (mark, move, copy, archive):
+        assert not result.is_error, _text(result)
+        assert result.structured_content["previous"]["messages"] == []
+    for result in (move, copy, archive):
+        assert result.structured_content["current"]["messages"] == []
+    assert move.structured_content["previous"]["folderIds"] == ["inbox"]
 
 
 @pytest.mark.parametrize(
