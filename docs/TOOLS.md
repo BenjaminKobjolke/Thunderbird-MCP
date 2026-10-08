@@ -26,10 +26,10 @@ settings 11, admin 7. `tbmcp tools --toolsets all` prints the live list.
 | `mail_get_source` | `messages.raw` | needs offline copy on IMAP |
 | `mail_attachments` | `messages.listAttachments` | |
 | `mail_save_attachment` | `messages.saveAttachment` → `x.files.write` | writes to disk |
-| `mail_mark` | `messages.mark` | read/flagged/junk/tags; no confirmation |
-| `mail_move` | `messages.move` | gated; folder config rules can skip confirmation; reports source folders |
-| `mail_copy` | `messages.copy` | gated |
-| `mail_archive` | `messages.archive` | gated |
+| `mail_mark` | `messages.mark` | read/flagged/junk/tags; no confirmation; reports earlier state per message |
+| `mail_move` | `messages.move` | gated; folder config rules can skip confirmation; reports each source and observed landing |
+| `mail_copy` | `messages.copy` | gated; reports each source and observed copy location |
+| `mail_archive` | `messages.archive` | gated; reports each source and observed archive location |
 | `mail_delete` | `messages.delete` | gated, `DESTRUCTIVE`, `permanent` flag |
 | `mail_tags` | `tags.list` | |
 | `mail_tag_upsert` | `tags.upsert` | |
@@ -189,6 +189,7 @@ including when Thunderbird is closed. `tb_wait` explicitly blocks until attachme
 
 - Return a dict. `_common.page()` for lists, `_common.changed()` for writes,
   `_common.dry_run()` when `dry_run_only=True`.
+- Every write tool call is appended to the action log in the state directory.
 - Mutating tools: `confirm: bool = False`, `consent: Gate("…") = None`,
   `guard_write("…")` first, `require(consent, "…")` before the write.
 - `Gate(...)` params never appear in the input schema, so the model cannot forge

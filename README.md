@@ -326,6 +326,12 @@ The profile is chosen from `TBMCP_PROFILE` / `--profile`, then the running Thund
 `TBMCP_DEBUG=1` logs verbosely to stderr; `TBMCP_STATE_DIR` moves the daemon's
 files; `tb_console` returns the add-on's `[tbmcp]` lines as a tool.
 
+**Action log:** Every write tool call appends one line to `actions-YYYY-MM.jsonl` in
+the state directory. Each entry records the time, tool, arguments, outcome, and
+reply or error; replies include earlier values when available. The log can hold
+private mail content. It is never rotated or deleted automatically; delete old
+months by hand when you no longer need their undo data.
+
 ## Requirements
 
 Thunderbird 128 or newer (verified on 155), Python 3.11–3.14, Windows, macOS or Linux

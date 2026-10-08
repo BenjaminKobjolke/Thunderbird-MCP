@@ -4,6 +4,8 @@
 
 ### Added
 
+- A private monthly action log records every write tool call and its reply. Mail
+  mark, move, copy and archive replies now include per-message undo information.
 - Compose tools accept `inline_images` paths and embed the pictures in HTML mail.
 - `tbmcp refresh` restarts stale daemon code, updates the add-on only when its build
   changed, and reports stale MCP server processes through `tb_status`.

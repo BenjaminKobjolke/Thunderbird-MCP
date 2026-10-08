@@ -89,6 +89,7 @@ Set read/flagged/junk state or adjust tags on one or more messages.
 
 Cheap and reversible, so no confirmation is required. Tag keys come from
 `mail_tags`.
+The reply reports each updated message's earlier flags and tags for undo.
 
 Parameters: **message_ids**, read, flagged, junk, add_tags, remove_tags  
 *(bold means required; `confirm` is the confirmation gate)*
@@ -100,6 +101,7 @@ Move messages into another folder.
 On IMAP the move is asynchronous — the tool waits for Thunderbird to confirm
 before returning, so a following search reflects the change.
 Moves allowed in the tbmcp config skip confirmation.
+The reply reports each message's source and any observed landing folder for undo.
 
 Parameters: **message_ids**, **destination_folder_id**, confirm, dry_run_only  
 *(bold means required; `confirm` is the confirmation gate)*
@@ -108,12 +110,16 @@ Parameters: **message_ids**, **destination_folder_id**, confirm, dry_run_only
 
 Copy messages into another folder, leaving the originals in place.
 
+The reply reports each source and any observed copy location for undo.
+
 Parameters: **message_ids**, **destination_folder_id**, confirm  
 *(bold means required; `confirm` is the confirmation gate)*
 
 ### `mail_archive` · write
 
 Archive messages using each account's configured archive layout.
+
+The reply reports each source and any observed archive location for undo.
 
 Parameters: **message_ids**, confirm  
 *(bold means required; `confirm` is the confirmation gate)*
