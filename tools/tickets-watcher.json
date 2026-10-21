@@ -11,6 +11,7 @@
     ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all"
   ],
   "command_check_scripts": [
+    "graphify_update.bat",
     "install_addon.bat",
     "refresh_live.bat"
   ],
@@ -20,5 +21,25 @@
       "refresh_live.bat"
     ],
     "tests": true
+  },
+  "analysis_command_states": {
+    ".venv\\Scripts\\python.exe -m pytest -q": {
+      "test": "green"
+    },
+    "node -e \"const fs=require('node:fs'); process.exit(fs.readdirSync('tests/js').some(name=>name.endsWith('.test.mjs'))?0:1)\" && node --test \"tests/js/*.test.mjs\"": {
+      "test": "green"
+    },
+    ".venv\\Scripts\\python.exe -m ruff check .": {
+      "test": "green"
+    },
+    ".venv\\Scripts\\python.exe -m ruff format --check .": {
+      "test": "green"
+    },
+    ".venv\\Scripts\\python.exe tools/check_consistency.py": {
+      "test": "green"
+    },
+    ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all": {
+      "test": "green"
+    }
   }
 }
