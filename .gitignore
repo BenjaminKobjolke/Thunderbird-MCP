@@ -27,6 +27,7 @@ probe/*.log
 
 # Claude Code local state and root plan files
 .claude/
+coding-rules.json
 /PLAN_*.md
 PLAN.md
 HANDOFF.md
