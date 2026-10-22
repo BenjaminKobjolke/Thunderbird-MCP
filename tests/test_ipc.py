@@ -6,10 +6,12 @@ import asyncio
 import contextlib
 import json
 import os
+import socket
 import time
 
 import pytest
 
+from tbmcp import bridge as bridge_module
 from tbmcp import ipc
 from tbmcp.bridge import Bridge
 from tbmcp.daemon import Daemon
@@ -17,6 +19,36 @@ from tbmcp.errors import NotConnectedError, TransportError
 from tbmcp.profile import ThunderbirdProfile
 
 pytestmark = pytest.mark.anyio
+
+
+def _advertise_daemon(port: int, token: str = "t") -> ipc.DaemonInfo:
+    info = ipc.DaemonInfo(
+        version=ipc.PROTOCOL_VERSION,
+        port=port,
+        token=token,
+        pid=os.getpid(),
+        profile="",
+    )
+    info.write()
+    return info
+
+
+def _stub_daemon(result: object):
+    async def daemon(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        with contextlib.suppress(Exception):
+            while True:
+                message = await ipc.read_message(reader)
+                if message is None:
+                    return
+                if message.get("t") == "auth":
+                    await ipc.write_message(writer, {"t": "ready", "id": message["id"]})
+                    continue
+                await ipc.write_message(
+                    writer,
+                    {"t": "res", "id": message["id"], "ok": True, "result": result},
+                )
+
+    return daemon
 
 
 def test_daemon_info_round_trip(tmp_path, monkeypatch) -> None:
@@ -197,29 +229,10 @@ async def test_a_large_result_reaches_the_caller(isolated_state) -> None:
     DISCONNECTED."""
     result = {"messages": [{"subject": "invoice", "preview": "x" * 1000} for _ in range(200)]}
 
-    async def daemon(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        with contextlib.suppress(Exception):
-            while True:
-                message = await ipc.read_message(reader)
-                if message is None:
-                    return
-                if message.get("t") == "auth":
-                    await ipc.write_message(writer, {"t": "ready", "id": message["id"]})
-                    continue
-                await ipc.write_message(
-                    writer, {"t": "res", "id": message["id"], "ok": True, "result": result}
-                )
-
     async with await asyncio.start_server(
-        daemon, host="127.0.0.1", port=0, limit=ipc.MAX_LINE
+        _stub_daemon(result), host="127.0.0.1", port=0, limit=ipc.MAX_LINE
     ) as server:
-        ipc.DaemonInfo(
-            version=ipc.PROTOCOL_VERSION,
-            port=server.sockets[0].getsockname()[1],
-            token="t",
-            pid=os.getpid(),
-            profile="",
-        ).write()
+        _advertise_daemon(server.sockets[0].getsockname()[1])
         bridge = Bridge(autostart=False)
         try:
             # `daemon.status` is answered by the daemon itself, so nothing waits for
@@ -227,6 +240,48 @@ async def test_a_large_result_reaches_the_caller(isolated_state) -> None:
             assert await bridge.call("daemon.status", timeout=10.0) == result
         finally:
             await bridge.close()
+
+
+async def test_a_refused_advertisement_is_withdrawn_and_reads_as_no_daemon(
+    isolated_state,
+) -> None:
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+
+    _advertise_daemon(port, token="stale")
+    client = Bridge(autostart=False)
+    try:
+        with pytest.raises(TransportError) as exc:
+            await client.status()
+
+        assert exc.value.code == "NO_DAEMON"
+        assert not ipc.DaemonInfo.path().exists()
+    finally:
+        await client.close()
+
+
+async def test_a_refused_advertisement_spawns_a_fresh_daemon(isolated_state, monkeypatch) -> None:
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        stale_port = listener.getsockname()[1]
+
+    result = {"running": True}
+
+    async with await asyncio.start_server(
+        _stub_daemon(result), host="127.0.0.1", port=0, limit=ipc.MAX_LINE
+    ) as server:
+        _advertise_daemon(stale_port, token="stale")
+
+        async def spawn_fresh_daemon(_bridge: Bridge) -> None:
+            _advertise_daemon(server.sockets[0].getsockname()[1], token="fresh")
+
+        monkeypatch.setattr(bridge_module.Bridge, "_spawn_daemon", spawn_fresh_daemon)
+        client = Bridge(autostart=True)
+        try:
+            assert await client.call("daemon.status", timeout=10.0) == result
+        finally:
+            await client.close()
 
 
 async def test_daemon_local_wait_propagates_not_connected_without_retry(monkeypatch) -> None:

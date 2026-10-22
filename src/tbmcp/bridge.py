@@ -104,6 +104,28 @@ class Bridge:
 
     async def _connect(self) -> None:
         info = ipc.DaemonInfo.load()
+        reader: asyncio.StreamReader | None = None
+        writer: asyncio.StreamWriter | None = None
+        if info is not None:
+            try:
+                reader, writer = await asyncio.open_connection(
+                    "127.0.0.1", info.port, limit=ipc.MAX_LINE
+                )
+            except ConnectionRefusedError:
+                log.warning(
+                    "the advertised daemon (pid %d, port %d) is not listening; "
+                    "dropping its stale advertisement",
+                    info.pid,
+                    info.port,
+                )
+                ipc.DaemonInfo.clear_if_owned(info.pid)
+                info = None
+            except OSError as exc:
+                raise TransportError(
+                    f"could not reach the tbmcp daemon on port {info.port}: {exc}",
+                    code="CONNECT_FAILED",
+                ) from exc
+
         if info is None:
             if not self.autostart:
                 raise TransportError(
@@ -114,7 +136,16 @@ class Bridge:
             if info is None:
                 raise TransportError("the daemon vanished right after starting", code="NO_DAEMON")
 
-        reader, writer = await asyncio.open_connection("127.0.0.1", info.port, limit=ipc.MAX_LINE)
+        if reader is None or writer is None:
+            try:
+                reader, writer = await asyncio.open_connection(
+                    "127.0.0.1", info.port, limit=ipc.MAX_LINE
+                )
+            except OSError as exc:
+                raise TransportError(
+                    f"could not reach the tbmcp daemon on port {info.port}: {exc}",
+                    code="CONNECT_FAILED",
+                ) from exc
         self._next_id += 1
         await ipc.write_message(writer, {"t": "auth", "id": self._next_id, "token": info.token})
         reply = await asyncio.wait_for(ipc.read_message(reader), timeout=10.0)
