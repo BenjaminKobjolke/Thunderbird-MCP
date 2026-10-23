@@ -30,10 +30,10 @@
       "test": "green"
     },
     ".venv\\Scripts\\python.exe -m ruff check .": {
-      "test": "failed"
+      "test": "green"
     },
     ".venv\\Scripts\\python.exe -m ruff format --check .": {
-      "test": "failed"
+      "test": "green"
     },
     ".venv\\Scripts\\python.exe tools/check_consistency.py": {
       "test": "green"
