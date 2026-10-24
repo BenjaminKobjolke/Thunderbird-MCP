@@ -1,5 +1,6 @@
 {
   "log_level": "all",
+  "fail_on": "warning",
   "max_lines_per_file": {
     "enabled": true,
     "warning": 300,
