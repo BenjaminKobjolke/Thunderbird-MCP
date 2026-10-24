@@ -8,9 +8,18 @@
     ".venv\\Scripts\\python.exe -m ruff check .",
     ".venv\\Scripts\\python.exe -m ruff format --check .",
     ".venv\\Scripts\\python.exe tools/check_consistency.py",
-    ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all"
+    ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all",
+    "tools\\analyze_changed_and_new_files.bat"
   ],
+  "analysis_command_kinds": {
+    "tools\\analyze_changed_and_new_files.bat": "code_quality"
+  },
   "command_check_scripts": [
+    "analyze_changed_and_new_files.bat",
+    "analyze_code.bat",
+    "analyze_code_config.bat",
+    "analyze_code_config.example.bat",
+    "fix_ruff_issues.bat",
     "graphify_update.bat",
     "install_addon.bat",
     "refresh_live.bat"
@@ -40,6 +49,9 @@
     },
     ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all": {
       "test": "green"
+    },
+    "tools\\analyze_changed_and_new_files.bat": {
+      "code_quality": "green"
     }
   },
   "analysis_code_quality_answered": true

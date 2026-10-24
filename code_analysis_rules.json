@@ -1,0 +1,72 @@
+{
+  "log_level": "all",
+  "max_lines_per_file": {
+    "enabled": true,
+    "warning": 300,
+    "error": 500,
+    "exclude_patterns": [
+      "__pycache__/**",
+      "*.pyc",
+      ".venv/**",
+      "venv/**",
+      ".git/**",
+      "build/**",
+      "dist/**",
+      "node_modules/**",
+      "code_analysis_results/**"
+    ]
+  },
+  "pmd_duplicates": {
+    "enabled": true,
+    "minimum_tokens": 100,
+    "exclude_patterns": {
+      "python": [
+        "__pycache__/**",
+        "*.pyc",
+        ".venv/**",
+        "venv/**",
+        ".git/**",
+        "build/**",
+        "dist/**",
+        "node_modules/**",
+        "code_analysis_results/**"
+      ]
+    }
+  },
+  "pmd_similar_code": {
+    "enabled": false,
+    "minimum_tokens": 100,
+    "ignore_identifiers": true,
+    "ignore_literals": true,
+    "ignore_annotations": false,
+    "exclude_patterns": {
+      "python": [
+        "__pycache__/**",
+        "*.pyc",
+        ".venv/**",
+        "venv/**",
+        ".git/**",
+        "build/**",
+        "dist/**",
+        "node_modules/**",
+        "code_analysis_results/**"
+      ]
+    }
+  },
+  "ruff_analyze": {
+    "enabled": true,
+    "select": ["E", "F", "I", "UP", "B", "SIM", "RUF"],
+    "ignore": ["B008", "E501", "SIM105", "SIM112"],
+    "exclude_patterns": [
+      "__pycache__/**",
+      "*.pyc",
+      ".venv/**",
+      "venv/**",
+      ".git/**",
+      "build/**",
+      "dist/**",
+      "node_modules/**",
+      "code_analysis_results/**"
+    ]
+  }
+}
