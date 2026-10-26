@@ -33,7 +33,7 @@
   },
   "analysis_command_states": {
     ".venv\\Scripts\\python.exe -m pytest -q": {
-      "test": "failed"
+      "test": "green"
     },
     "node -e \"const fs=require('node:fs'); process.exit(fs.readdirSync('tests/js').some(name=>name.endsWith('.test.mjs'))?0:1)\" && node --test \"tests/js/*.test.mjs\"": {
       "test": "green"
@@ -54,10 +54,5 @@
       "code_quality": "green"
     }
   },
-  "analysis_code_quality_answered": true,
-  "analysis_command_failing_tests": {
-    ".venv\\Scripts\\python.exe -m pytest -q": [
-      "tests/test_bridge_spawn.py::test_venv_daemon_has_no_console_and_remains_usable"
-    ]
-  }
+  "analysis_code_quality_answered": true
 }
