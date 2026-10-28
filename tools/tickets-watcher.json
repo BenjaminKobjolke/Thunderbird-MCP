@@ -1,6 +1,6 @@
 {
   "files": {
-    "TICKETS_WATCHER_COMMANDS.md": 2
+    "TICKETS_WATCHER_COMMANDS.md": 3
   },
   "analysis_commands": [
     ".venv\\Scripts\\python.exe -m pytest -q",
@@ -9,7 +9,8 @@
     ".venv\\Scripts\\python.exe -m ruff format --check .",
     ".venv\\Scripts\\python.exe tools/check_consistency.py",
     ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all",
-    "tools\\analyze_changed_and_new_files.bat"
+    "tools\\analyze_changed_and_new_files.bat",
+    "tools\\analyze_code.bat"
   ],
   "analysis_command_kinds": {
     "tools\\analyze_changed_and_new_files.bat": "code_quality"
@@ -26,6 +27,12 @@
   ],
   "analysis_commands_seen": {
     "scripts": [
+      "analyze_changed_and_new_files.bat",
+      "analyze_code.bat",
+      "analyze_code_config.bat",
+      "analyze_code_config.example.bat",
+      "fix_ruff_issues.bat",
+      "graphify_update.bat",
       "install_addon.bat",
       "refresh_live.bat"
     ],
@@ -54,5 +61,7 @@
       "code_quality": "green"
     }
   },
-  "analysis_code_quality_answered": true
+  "analysis_code_quality_answered": true,
+  "analysis_format_command": "tools/fix_ruff_issues.bat",
+  "project_id": 12293
 }
