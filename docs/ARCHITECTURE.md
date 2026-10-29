@@ -126,7 +126,8 @@ Three layers, because no single one can see the whole chain:
   timers, a separate realm, errors that must be `ExtensionError`s — are exercised.
 - **live** (`tools/smoke_live.py`, `tools/smoke_search.py`) drives a running
   Thunderbird read-only and is the only layer that sees Thunderbird's actual
-  behaviour. It is not in CI; run it before a release.
+  behaviour. The search checks shared with unit tests live in
+  `tools/smoke_search_checks.py`. It is not in CI; run it before a release.
 
 ## Wire protocol
 
