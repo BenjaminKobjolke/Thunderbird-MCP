@@ -13,7 +13,7 @@ import sys
 
 import pytest
 
-from tbmcp import clients
+from tbmcp import client_launcher
 from tbmcp.config import Settings
 
 
@@ -28,18 +28,18 @@ def test_unrunnable_shim_is_rejected(monkeypatch, shim):
     def blocked(argv, **kwargs):
         raise OSError("Uygulama Denetimi ilkesi bu dosyayi engelledi")
 
-    monkeypatch.setattr(clients.subprocess, "run", blocked)
-    assert clients._runnable(shim) is False
+    monkeypatch.setattr(client_launcher.subprocess, "run", blocked)
+    assert client_launcher._runnable(shim) is False
 
 
 def test_nonzero_exit_is_rejected(monkeypatch, shim):
-    monkeypatch.setattr(clients, "_probe_exit", lambda argv: 1)
-    assert clients._runnable(shim) is False
+    monkeypatch.setattr(client_launcher, "_probe_exit", lambda argv: 1)
+    assert client_launcher._runnable(shim) is False
 
 
 def test_runnable_shim_is_accepted(monkeypatch, shim):
-    monkeypatch.setattr(clients, "_probe_exit", lambda argv: 0)
-    assert clients._runnable(shim) is True
+    monkeypatch.setattr(client_launcher, "_probe_exit", lambda argv: 0)
+    assert client_launcher._runnable(shim) is True
 
 
 def test_server_command_falls_back_to_module(monkeypatch):
@@ -49,8 +49,8 @@ def test_server_command_falls_back_to_module(monkeypatch):
     author writes: CI runs on `python3.13`, and the suffix list quietly decided
     the three-platform claim was false.
     """
-    monkeypatch.setattr(clients, "_console_script", lambda: None)
-    command, args = clients.server_command(Settings())
+    monkeypatch.setattr(client_launcher, "_console_script", lambda: None)
+    command, args = client_launcher.server_command(Settings())
     assert args[:2] == ["-m", "tbmcp"]
     assert command == str(pathlib.Path(sys.executable).resolve())
 
@@ -60,14 +60,14 @@ def test_console_script_returns_none_when_all_unrunnable(monkeypatch, tmp_path):
     fake_python = tmp_path / "python.exe"
     fake_python.write_bytes(b"fake")
 
-    monkeypatch.setattr(clients.shutil, "which", lambda name: None)
-    monkeypatch.setattr(clients.sys, "executable", str(fake_python))
+    monkeypatch.setattr(client_launcher.shutil, "which", lambda name: None)
+    monkeypatch.setattr(client_launcher.sys, "executable", str(fake_python))
     # All candidates exist as files
-    monkeypatch.setattr(clients.Path, "is_file", lambda self: True)
+    monkeypatch.setattr(client_launcher.Path, "is_file", lambda self: True)
     # But all are unrunnable
-    monkeypatch.setattr(clients, "_runnable", lambda path: False)
+    monkeypatch.setattr(client_launcher, "_runnable", lambda path: False)
 
-    result = clients._console_script()
+    result = client_launcher._console_script()
     assert result is None
 
 
@@ -76,10 +76,10 @@ def test_console_script_skips_unrunnable_candidate(monkeypatch, tmp_path):
     fake_python = tmp_path / "python.exe"
     fake_python.write_bytes(b"fake")
 
-    monkeypatch.setattr(clients.shutil, "which", lambda name: None)
-    monkeypatch.setattr(clients.sys, "executable", str(fake_python))
+    monkeypatch.setattr(client_launcher.shutil, "which", lambda name: None)
+    monkeypatch.setattr(client_launcher.sys, "executable", str(fake_python))
     # All candidates exist as files
-    monkeypatch.setattr(clients.Path, "is_file", lambda self: True)
+    monkeypatch.setattr(client_launcher.Path, "is_file", lambda self: True)
 
     # First candidate (here/"thunderbird-mcp.exe") is unrunnable,
     # second candidate (here/"thunderbird-mcp") is runnable.
@@ -88,9 +88,9 @@ def test_console_script_skips_unrunnable_candidate(monkeypatch, tmp_path):
         # .exe files are unrunnable; others are runnable
         return not str(path).endswith(".exe")
 
-    monkeypatch.setattr(clients, "_runnable", mock_runnable)
+    monkeypatch.setattr(client_launcher, "_runnable", mock_runnable)
 
-    result = clients._console_script()
+    result = client_launcher._console_script()
     assert result is not None
     # Must be the second candidate (here/"thunderbird-mcp"), not the first (here/"thunderbird-mcp.exe")
     # Only true if the guard skips the unrunnable .exe and continues to check the next candidate

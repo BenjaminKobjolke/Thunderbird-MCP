@@ -23,15 +23,15 @@ def _setup(
     running_profile=True,
     shutdown_error=None,
 ):
-    from tbmcp import addon_install, cli, ipc
+    from tbmcp import addon_install, cli, cli_commands, ipc, thunderbird_process
 
     monkeypatch.setattr("tbmcp.profile.list_profiles", lambda: [])
     monkeypatch.setattr(
-        addon_install,
+        thunderbird_process,
         "running_command_lines",
         lambda: [f'thunderbird.exe -profile "{tmp_path}"'] if running_profile else [],
     )
-    monkeypatch.setattr(addon_install, "is_running", lambda: running)
+    monkeypatch.setattr(thunderbird_process, "is_running", lambda: running)
     monkeypatch.setattr(ipc, "newest_source_mtime", lambda: 20.0)
     install_calls = []
     monkeypatch.setattr(
@@ -74,18 +74,18 @@ def _setup(
             self.closed = True
 
     monkeypatch.setattr("tbmcp.bridge.Bridge", Bridge)
-    return cli, instances, install_calls
+    return cli, cli_commands, instances, install_calls
 
 
 def test_matching_addon_is_left_alone_and_current_daemon_is_not_stopped(
     monkeypatch, tmp_path, capsys
 ):
-    cli, instances, calls = _setup(
+    cli, cli_commands, instances, calls = _setup(
         monkeypatch,
         tmp_path,
         status={"daemon": {"uptimeSeconds": 1}, "connected": True},
     )
-    monkeypatch.setattr(cli.time, "time", lambda: 10.0)
+    monkeypatch.setattr(cli_commands.time, "time", lambda: 10.0)
     monkeypatch.setattr("tbmcp.ipc.newest_source_mtime", lambda: 1.0)
     assert cli.main(["refresh"]) == 0
     assert calls == []
@@ -99,7 +99,9 @@ def test_matching_addon_is_left_alone_and_current_daemon_is_not_stopped(
 def test_stale_or_missing_addon_install_preserves_running_state(
     monkeypatch, tmp_path, installed, running, capsys
 ):
-    cli, _instances, calls = _setup(monkeypatch, tmp_path, installed=installed, running=running)
+    cli, _cli_commands, _instances, calls = _setup(
+        monkeypatch, tmp_path, installed=installed, running=running
+    )
     assert cli.main(["refresh"]) == 0
     assert len(calls) == 1
     assert calls[0][1] == {"restart_after": running}
@@ -108,23 +110,25 @@ def test_stale_or_missing_addon_install_preserves_running_state(
 
 
 def test_failed_install_returns_one(monkeypatch, tmp_path):
-    cli, _instances, _calls = _setup(monkeypatch, tmp_path, installed="failed")
+    cli, _cli_commands, _instances, _calls = _setup(monkeypatch, tmp_path, installed="failed")
     assert cli.main(["refresh"]) == 1
 
 
 def test_missing_profile_still_attempts_install(monkeypatch, tmp_path):
-    cli, _instances, calls = _setup(monkeypatch, tmp_path, installed=None, running_profile=False)
+    cli, _cli_commands, _instances, calls = _setup(
+        monkeypatch, tmp_path, installed=None, running_profile=False
+    )
     assert cli.main(["refresh"]) == 0
     assert calls == [(None, {"restart_after": False})]
 
 
 def test_old_daemon_is_shutdown_and_dropped_connection_is_ignored(monkeypatch, tmp_path, capsys):
-    cli, instances, _calls = _setup(
+    cli, cli_commands, instances, _calls = _setup(
         monkeypatch,
         tmp_path,
         status={"daemon": {"uptimeSeconds": 5}, "connected": False},
     )
-    monkeypatch.setattr(cli.time, "time", lambda: 100.0)
+    monkeypatch.setattr(cli_commands.time, "time", lambda: 100.0)
     monkeypatch.setattr("tbmcp.ipc.newest_source_mtime", lambda: 98.0)
     assert cli.main(["refresh"]) == 0
     assert instances[0].calls == ["daemon.shutdown"]
@@ -133,26 +137,26 @@ def test_old_daemon_is_shutdown_and_dropped_connection_is_ignored(monkeypatch, t
 
 @pytest.mark.parametrize("code", ["DISCONNECTED", "NO_DAEMON"])
 def test_shutdown_connection_drop_does_not_fail_refresh(monkeypatch, tmp_path, code):
-    cli, instances, _calls = _setup(
+    cli, cli_commands, instances, _calls = _setup(
         monkeypatch,
         tmp_path,
         status={"daemon": {"uptimeSeconds": 5}},
         shutdown_error=TransportError("connection dropped", code=code),
     )
-    monkeypatch.setattr(cli.time, "time", lambda: 100.0)
+    monkeypatch.setattr(cli_commands.time, "time", lambda: 100.0)
     monkeypatch.setattr("tbmcp.ipc.newest_source_mtime", lambda: 98.0)
     assert cli.main(["refresh"]) == 0
     assert instances[0].calls == ["daemon.shutdown"]
 
 
 def test_failed_shutdown_request_fails_refresh(monkeypatch, tmp_path, capsys):
-    cli, instances, calls = _setup(
+    cli, cli_commands, instances, calls = _setup(
         monkeypatch,
         tmp_path,
         status={"daemon": {"uptimeSeconds": 5}},
         shutdown_error=TransportError("could not reach the daemon", code="WRITE_FAILED"),
     )
-    monkeypatch.setattr(cli.time, "time", lambda: 100.0)
+    monkeypatch.setattr(cli_commands.time, "time", lambda: 100.0)
     monkeypatch.setattr("tbmcp.ipc.newest_source_mtime", lambda: 98.0)
     assert cli.main(["refresh"]) == 1
     assert instances[0].closed
@@ -161,7 +165,7 @@ def test_failed_shutdown_request_fails_refresh(monkeypatch, tmp_path, capsys):
 
 
 def test_missing_daemon_is_not_an_error(monkeypatch, tmp_path, capsys):
-    cli, instances, _calls = _setup(
+    cli, _cli_commands, instances, _calls = _setup(
         monkeypatch, tmp_path, status=TransportError("no daemon", code="NO_DAEMON")
     )
     assert cli.main(["refresh"]) == 0
@@ -170,7 +174,7 @@ def test_missing_daemon_is_not_an_error(monkeypatch, tmp_path, capsys):
 
 
 def test_unreachable_daemon_is_not_reported_as_absent(monkeypatch, tmp_path, capsys):
-    cli, instances, calls = _setup(
+    cli, _cli_commands, instances, calls = _setup(
         monkeypatch,
         tmp_path,
         status=TransportError("the daemon rejected our control token", code="UNAUTHORIZED"),

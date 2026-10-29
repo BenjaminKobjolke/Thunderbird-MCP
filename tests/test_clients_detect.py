@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from tbmcp import clients
+from tbmcp import client_codex, client_json_writers, clients
 
 
 @pytest.fixture(autouse=True)
@@ -24,17 +24,21 @@ def _nothing_present(monkeypatch, tmp_path):
     """
     monkeypatch.setattr(clients.shutil, "which", lambda name: None)
     nowhere = tmp_path / "nowhere"
-    monkeypatch.setattr(clients, "_claude_code_path", lambda: nowhere / "claude.json")
-    monkeypatch.setattr(clients, "_codex_home", lambda: nowhere / "codex")
+    monkeypatch.setattr(client_json_writers, "_claude_code_path", lambda: nowhere / "claude.json")
+    monkeypatch.setattr(client_codex, "_codex_home", lambda: nowhere / "codex")
     monkeypatch.setattr(
-        clients, "_claude_desktop_path", lambda: nowhere / "claude-desktop" / "c.json"
+        client_json_writers, "_claude_desktop_path", lambda: nowhere / "claude-desktop" / "c.json"
     )
-    monkeypatch.setattr(clients, "_cursor_path", lambda: nowhere / "cursor" / "mcp.json")
     monkeypatch.setattr(
-        clients, "_vscode_user_path", lambda: nowhere / "vscode" / "User" / "mcp.json"
+        client_json_writers, "_cursor_path", lambda: nowhere / "cursor" / "mcp.json"
     )
-    monkeypatch.setattr(clients, "_gemini_path", lambda: nowhere / "gemini" / "settings.json")
-    monkeypatch.setattr(clients, "_zed_path", lambda: nowhere / "zed" / "settings.json")
+    monkeypatch.setattr(
+        client_json_writers, "_vscode_user_path", lambda: nowhere / "vscode" / "User" / "mcp.json"
+    )
+    monkeypatch.setattr(
+        client_json_writers, "_gemini_path", lambda: nowhere / "gemini" / "settings.json"
+    )
+    monkeypatch.setattr(client_json_writers, "_zed_path", lambda: nowhere / "zed" / "settings.json")
 
 
 def test_nothing_present_detects_nothing():
@@ -52,7 +56,7 @@ def test_claude_code_cli_on_path_counts_even_without_a_config_file(monkeypatch):
 def test_codex_config_dir_counts_even_without_the_cli_on_path(monkeypatch, tmp_path):
     home = tmp_path / "codex-home"
     home.mkdir()
-    monkeypatch.setattr(clients, "_codex_home", lambda: home)
+    monkeypatch.setattr(client_codex, "_codex_home", lambda: home)
     assert clients.installed_clients() == ["codex"]
 
 
@@ -68,7 +72,7 @@ def test_gui_client_config_file_present_is_the_signal(monkeypatch, tmp_path):
     path = tmp_path / "cursor" / "mcp.json"
     path.parent.mkdir(parents=True)
     path.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(clients, "_cursor_path", lambda: path)
+    monkeypatch.setattr(client_json_writers, "_cursor_path", lambda: path)
     assert clients.installed_clients() == ["cursor"]
 
 
@@ -76,7 +80,7 @@ def test_gui_client_config_dir_without_the_file_still_counts(monkeypatch, tmp_pa
     """An app that is installed but never had a server registered has the dir, not the file."""
     path = tmp_path / "gemini" / "settings.json"
     path.parent.mkdir(parents=True)
-    monkeypatch.setattr(clients, "_gemini_path", lambda: path)
+    monkeypatch.setattr(client_json_writers, "_gemini_path", lambda: path)
     assert clients.installed_clients() == ["gemini"]
 
 
@@ -84,7 +88,7 @@ def test_result_order_follows_clients_tuple_not_discovery_order(monkeypatch, tmp
     """Zed is found before Codex here, but CLIENTS puts codex first — the report must too."""
     zed_path = tmp_path / "zed" / "settings.json"
     zed_path.parent.mkdir(parents=True)
-    monkeypatch.setattr(clients, "_zed_path", lambda: zed_path)
+    monkeypatch.setattr(client_json_writers, "_zed_path", lambda: zed_path)
     monkeypatch.setattr(
         clients.shutil, "which", lambda name: "/bin/codex" if name == "codex" else None
     )

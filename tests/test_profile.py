@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import pathlib
 
-from tbmcp.profile import ProfileSnapshot, ThunderbirdProfile, _parse_profiles_ini, read_prefs
+from tbmcp.profile import ThunderbirdProfile, _parse_profiles_ini
+from tbmcp.profile_data import ProfileSnapshot, read_prefs
 
 
 def test_running_profile_from_portable_command_line(tmp_path, monkeypatch):
-    from tbmcp import addon_install
+    from tbmcp import thunderbird_process
     from tbmcp.profile import find_profile, profile_from_command_line
 
     portable = tmp_path / "portable"
@@ -29,7 +30,9 @@ def test_running_profile_from_portable_command_line(tmp_path, monkeypatch):
         lambda: [ThunderbirdProfile(default, "default", True, tmp_path)],
     )
     monkeypatch.setattr(
-        addon_install, "running_command_lines", lambda: [f"thunderbird.exe -profile {portable}"]
+        thunderbird_process,
+        "running_command_lines",
+        lambda: [f"thunderbird.exe -profile {portable}"],
     )
     assert profile_from_command_line(f"thunderbird.exe -profile {portable}") == portable
     chosen = find_profile()
@@ -37,7 +40,7 @@ def test_running_profile_from_portable_command_line(tmp_path, monkeypatch):
 
 
 def test_running_profile_selection_fallbacks(tmp_path, monkeypatch):
-    from tbmcp import addon_install
+    from tbmcp import thunderbird_process
     from tbmcp.profile import describe_profile, find_profile, profile_from_command_line
 
     portable = tmp_path / "portable profile"
@@ -50,7 +53,7 @@ def test_running_profile_selection_fallbacks(tmp_path, monkeypatch):
         lambda: [ThunderbirdProfile(default, "default", True, tmp_path)],
     )
     monkeypatch.setattr(
-        addon_install, "running_command_lines", lambda: [f'thunderbird -profile "{portable}"']
+        thunderbird_process, "running_command_lines", lambda: [f'thunderbird -profile "{portable}"']
     )
     assert profile_from_command_line(f'thunderbird -profile "{portable}"') == portable
     assert profile_from_command_line(f'thunderbird -contentproc -profile "{portable}"') is None
@@ -59,7 +62,7 @@ def test_running_profile_selection_fallbacks(tmp_path, monkeypatch):
     assert find_profile(follow_running=False).path == default
     assert find_profile(follow_running=False).source == "default"
     monkeypatch.setattr(
-        addon_install, "running_command_lines", lambda: ["thunderbird -profile /missing"]
+        thunderbird_process, "running_command_lines", lambda: ["thunderbird -profile /missing"]
     )
     assert find_profile().path == default
     assert (
@@ -89,7 +92,7 @@ def test_windows_portable_line_and_equivalent_profile_path():
 
 
 def test_saved_profile_precedence_and_source_labels(tmp_path, monkeypatch):
-    from tbmcp import addon_install
+    from tbmcp import thunderbird_process
     from tbmcp.profile import SOURCE_LABELS, find_profile
 
     saved = tmp_path / "saved"
@@ -99,13 +102,13 @@ def test_saved_profile_precedence_and_source_labels(tmp_path, monkeypatch):
         path.mkdir()
     monkeypatch.delenv("TBMCP_PROFILE", raising=False)
     monkeypatch.setattr("tbmcp.profile.list_profiles", lambda: [])
-    monkeypatch.setattr(addon_install, "saved_user_variable", lambda _name: str(saved))
-    monkeypatch.setattr(addon_install, "running_command_lines", lambda: [])
+    monkeypatch.setattr(thunderbird_process, "saved_user_variable", lambda _name: str(saved))
+    monkeypatch.setattr(thunderbird_process, "running_command_lines", lambda: [])
     chosen = find_profile()
     assert chosen.path == saved and chosen.source == "user-variable"
     assert find_profile(follow_running=False).source == "user-variable"
     monkeypatch.setattr(
-        addon_install, "running_command_lines", lambda: [f'thunderbird -profile "{running}"']
+        thunderbird_process, "running_command_lines", lambda: [f'thunderbird -profile "{running}"']
     )
     chosen = find_profile()
     assert chosen.path == running and chosen.source == "running"

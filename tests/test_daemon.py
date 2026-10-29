@@ -12,51 +12,34 @@ healthy — which is why they are pinned down as tests rather than left to judge
 
 from __future__ import annotations
 
-import asyncio
-import contextlib
-import json
 import logging
 import os
-import threading
-import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import pytest
-from websockets.asyncio.client import connect as ws_connect
-from websockets.exceptions import ConnectionClosed
 
-from tbmcp import ipc
-from tbmcp.cli import build_parser, cmd_daemon
-from tbmcp.daemon import Daemon, run_daemon
-from tbmcp.errors import NotConnectedError
-from tbmcp.profile import BRIDGE_FILE, ThunderbirdProfile
+from tbmcp import daemon_lock, ipc
+from tbmcp.cli import build_parser
+from tbmcp.cli_commands import cmd_daemon
+from tbmcp.daemon import Daemon
+from tbmcp.daemon_run import run_daemon
 
 pytestmark = pytest.mark.anyio
-
-
-@pytest.fixture
-def isolated_state(tmp_path, monkeypatch):
-    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-    monkeypatch.setenv("TBMCP_STATE_DIR", str(tmp_path))
-    ipc.DaemonInfo.clear()
-    yield tmp_path
-    ipc.DaemonInfo.clear()
 
 
 class TestLock:
     """The lock is the actual singleton guarantee; the advertisement is only a hint."""
 
     def test_only_one_holder(self, isolated_state) -> None:
-        first = ipc.DaemonLock.acquire()
+        first = daemon_lock.DaemonLock.acquire()
         assert first is not None
         assert first.holder() == os.getpid()
         # A second attempt from a live holder must fail, which is what stops two
         # daemons binding in the same second.
-        assert ipc.DaemonLock.acquire() is None
+        assert daemon_lock.DaemonLock.acquire() is None
         first.release()
-        again = ipc.DaemonLock.acquire()
+        again = daemon_lock.DaemonLock.acquire()
         assert again is not None
         again.release()
 
@@ -64,7 +47,7 @@ class TestLock:
         """A daemon that crashed must not lock the user out for ever."""
         path = ipc.state_dir() / "daemon.lock"
         path.write_text("2147483647", encoding="ascii")  # a pid that cannot be alive
-        lock = ipc.DaemonLock.acquire()
+        lock = daemon_lock.DaemonLock.acquire()
         assert lock is not None
         assert lock.holder() == os.getpid()
         lock.release()
@@ -72,19 +55,19 @@ class TestLock:
     def test_an_unreadable_lock_is_reclaimed(self, isolated_state) -> None:
         path = ipc.state_dir() / "daemon.lock"
         path.write_text("not a pid", encoding="ascii")
-        lock = ipc.DaemonLock.acquire()
+        lock = daemon_lock.DaemonLock.acquire()
         assert lock is not None
         lock.release()
 
     def test_release_does_not_remove_someone_elses_lock(self, isolated_state) -> None:
         path = ipc.state_dir() / "daemon.lock"
         path.write_text("2147483647", encoding="ascii")
-        ipc.DaemonLock(path).release()
+        daemon_lock.DaemonLock(path).release()
         assert path.is_file(), "released a lock it did not hold"
 
 
 async def test_stands_down_when_another_daemon_advertises(isolated_state) -> None:
-    held = ipc.DaemonLock.acquire()
+    held = daemon_lock.DaemonLock.acquire()
     assert held is not None
     # The holder has published, so we are genuinely redundant.
     ipc.DaemonInfo(
@@ -106,11 +89,11 @@ async def test_a_wedged_lock_holder_does_not_block_startup(isolated_state, monke
     """The failure this guards against: a live process holding the start-up lock but
     never advertising left every later daemon standing down, and the bridge stayed
     down until that process died."""
-    held = ipc.DaemonLock.acquire()
+    held = daemon_lock.DaemonLock.acquire()
     assert held is not None
     assert ipc.DaemonInfo.load() is None, "no advertisement, so the holder is wedged"
-    monkeypatch.setattr("tbmcp.daemon.find_profile", lambda *_a, **_k: None)
-    monkeypatch.setattr("tbmcp.daemon._await_advertisement", _no_advertisement)
+    monkeypatch.setattr("tbmcp.daemon_run.find_profile", lambda *_a, **_k: None)
+    monkeypatch.setattr("tbmcp.daemon_run._await_advertisement", _no_advertisement)
     # Reaching the profile check proves it took the lock over rather than giving up.
     assert await run_daemon() == 2
 
@@ -121,9 +104,9 @@ async def _no_advertisement(*, timeout: float):
 
 async def test_force_starts_anyway(isolated_state, monkeypatch) -> None:
     """`--force` exists for recovery; the loser then stands down via the watchdog."""
-    held = ipc.DaemonLock.acquire()
+    held = daemon_lock.DaemonLock.acquire()
     assert held is not None
-    monkeypatch.setattr("tbmcp.daemon.find_profile", lambda *_a, **_k: None)
+    monkeypatch.setattr("tbmcp.daemon_run.find_profile", lambda *_a, **_k: None)
     try:
         # Past the singleton check, and stopped at the missing profile.
         assert await run_daemon(force=True) == 2
@@ -133,9 +116,9 @@ async def test_force_starts_anyway(isolated_state, monkeypatch) -> None:
 
 async def test_a_missing_profile_releases_the_lock(isolated_state, monkeypatch) -> None:
     """Otherwise one bad start would block every later one."""
-    monkeypatch.setattr("tbmcp.daemon.find_profile", lambda *_a, **_k: None)
+    monkeypatch.setattr("tbmcp.daemon_run.find_profile", lambda *_a, **_k: None)
     assert await run_daemon() == 2
-    lock = ipc.DaemonLock.acquire()
+    lock = daemon_lock.DaemonLock.acquire()
     assert lock is not None, "the lock was not released after a failed start"
     lock.release()
 
@@ -175,389 +158,6 @@ def test_supersede_rule(isolated_state, monkeypatch) -> None:
 # handler.
 
 
-def _daemon(path) -> Daemon:
-    profile = ThunderbirdProfile(path=path, name="test", is_default=True, root=path)
-    return Daemon(profile, idle_timeout=0)
-
-
-async def test_auto_profile_moves_pairing_file(isolated_state, monkeypatch):
-    old = isolated_state / "old"
-    new = isolated_state / "portable"
-    old.mkdir()
-    new.mkdir()
-    daemon = Daemon(ThunderbirdProfile(old, "old", True, isolated_state, "default"))
-    daemon._control_port = 12345
-    daemon._write_bridge_file(54321)
-    daemon._advertise()
-    monkeypatch.setattr("tbmcp.daemon.running_profile_dirs", lambda: [new])
-
-    await daemon._follow_thunderbird()
-
-    assert daemon.profile.path == new
-    assert daemon.status()["profile"]["source"] == "running"
-    assert not (old / BRIDGE_FILE).exists()
-    assert json.loads((new / BRIDGE_FILE).read_text())["pid"] == os.getpid()
-    assert ipc.DaemonInfo.load().profile == str(new)
-
-
-async def test_explicit_profile_reports_other_without_moving(isolated_state, monkeypatch):
-    old = isolated_state / "explicit"
-    new = isolated_state / "portable"
-    old.mkdir()
-    new.mkdir()
-    daemon = Daemon(ThunderbirdProfile(old, "explicit", False, isolated_state))
-    daemon._write_bridge_file(54321)
-    monkeypatch.setattr("tbmcp.daemon.running_profile_dirs", lambda: [new])
-    await daemon._follow_thunderbird()
-    assert daemon.status()["profile"]["thunderbirdProfiles"] == [str(new)]
-    assert (old / BRIDGE_FILE).exists() and not (new / BRIDGE_FILE).exists()
-
-
-async def test_failed_profile_move_keeps_old_pairing(isolated_state, monkeypatch):
-    old = isolated_state / "old"
-    new = isolated_state / "portable"
-    old.mkdir()
-    new.mkdir()
-    daemon = Daemon(ThunderbirdProfile(old, "old", True, isolated_state, "default"))
-    daemon._control_port = 12345
-    daemon._write_bridge_file(54321)
-    daemon._advertise()
-    monkeypatch.setattr("tbmcp.daemon.running_profile_dirs", lambda: [new])
-    write = daemon._write_bridge_file
-
-    def fail_new(port):
-        if daemon.profile.path == new:
-            raise OSError("unwritable")
-        write(port)
-
-    monkeypatch.setattr(daemon, "_write_bridge_file", fail_new)
-    await daemon._follow_thunderbird()
-    assert daemon.profile.path == old
-    assert (old / BRIDGE_FILE).exists()
-    assert ipc.DaemonInfo.load().profile == str(old)
-
-
-async def test_wait_follows_profile_that_appears_later(isolated_state, monkeypatch):
-    from types import SimpleNamespace
-
-    old = isolated_state / "old"
-    new = isolated_state / "portable"
-    old.mkdir()
-    new.mkdir()
-    daemon = Daemon(ThunderbirdProfile(old, "old", True, isolated_state, "default"))
-    daemon._write_bridge_file(54321)
-    running = []
-    monkeypatch.setattr("tbmcp.daemon.running_profile_dirs", lambda: running[:])
-    monkeypatch.setattr("tbmcp.daemon.FOLLOW_INTERVAL", 0.05)
-
-    async def start_thunderbird():
-        await asyncio.sleep(0.08)
-        running.append(new)
-        while not (new / BRIDGE_FILE).exists():
-            await asyncio.sleep(0.01)
-        daemon.session = SimpleNamespace(describe=lambda: {})
-        daemon._session_ready.set()
-
-    task = asyncio.create_task(start_thunderbird())
-    status = await daemon._invoke(
-        "daemon.waitForThunderbird", {"timeout": 1}, timeout=2, on_progress=None
-    )
-    await task
-    assert status["connected"] and status["profile"]["path"] == str(new)
-
-
-async def test_profile_follow_respects_owner_session_and_interval(isolated_state, monkeypatch):
-    old = isolated_state / "old"
-    new = isolated_state / "portable"
-    old.mkdir()
-    new.mkdir()
-    daemon = Daemon(ThunderbirdProfile(old, "old", True, isolated_state, "default"))
-    daemon._write_bridge_file(54321)
-    (old / BRIDGE_FILE).write_text(json.dumps({"pid": 999001}))
-    lookups = []
-
-    def running():
-        lookups.append(1)
-        return [new]
-
-    monkeypatch.setattr("tbmcp.daemon.running_profile_dirs", running)
-    await daemon._follow_thunderbird()
-    assert (old / BRIDGE_FILE).exists()
-    assert len(lookups) == 1
-    await daemon._follow_thunderbird()
-    assert len(lookups) == 1
-    daemon.session = object()
-    daemon._followed_at = 0
-    await daemon._follow_thunderbird()
-    assert len(lookups) == 1
-
-
-def _held_lookup(monkeypatch, result):
-    """A profile lookup that blocks in its worker thread until released."""
-    started, release = threading.Event(), threading.Event()
-
-    def running():
-        started.set()
-        release.wait(5)
-        return result
-
-    monkeypatch.setattr("tbmcp.daemon.running_profile_dirs", running)
-    return started, release
-
-
-async def test_profile_follow_rechecks_session_after_lookup(isolated_state, monkeypatch):
-    old = isolated_state / "old"
-    new = isolated_state / "portable"
-    old.mkdir()
-    new.mkdir()
-    daemon = Daemon(ThunderbirdProfile(old, "old", True, isolated_state, "default"))
-    daemon._control_port = 12345
-    daemon._write_bridge_file(54321)
-    daemon._advertise()
-    started, release = _held_lookup(monkeypatch, [new])
-
-    follow = asyncio.create_task(daemon._follow_thunderbird())
-    await asyncio.to_thread(started.wait, 5)
-    daemon.session = object()
-    release.set()
-    await follow
-
-    assert daemon.profile.path == old
-    assert (old / BRIDGE_FILE).exists() and not (new / BRIDGE_FILE).exists()
-    assert ipc.DaemonInfo.load().profile == str(old)
-
-
-async def test_wait_deadline_covers_slow_profile_lookup(isolated_state, monkeypatch):
-    daemon = _daemon(isolated_state)
-    _started, release = _held_lookup(monkeypatch, [])
-    begun = time.monotonic()
-    try:
-        with pytest.raises(NotConnectedError):
-            await daemon._invoke(
-                "daemon.waitForThunderbird", {"timeout": 0.1}, timeout=2, on_progress=None
-            )
-        assert time.monotonic() - begun < 1
-    finally:
-        release.set()
-
-
-async def test_wait_returns_when_session_attaches_during_lookup(isolated_state, monkeypatch):
-    from types import SimpleNamespace
-
-    old = isolated_state / "old"
-    new = isolated_state / "portable"
-    old.mkdir()
-    new.mkdir()
-    daemon = Daemon(ThunderbirdProfile(old, "old", True, isolated_state, "default"))
-    daemon._write_bridge_file(54321)
-    started, release = _held_lookup(monkeypatch, [new])
-
-    async def attach():
-        await asyncio.to_thread(started.wait, 5)
-        daemon.session = SimpleNamespace(describe=lambda: {})
-        daemon._session_ready.set()
-
-    task = asyncio.create_task(attach())
-    begun = time.monotonic()
-    try:
-        status = await daemon._invoke(
-            "daemon.waitForThunderbird", {"timeout": 3}, timeout=4, on_progress=None
-        )
-        assert time.monotonic() - begun < 1
-    finally:
-        release.set()
-    await task
-    await asyncio.sleep(0.05)  # the released lookup must not publish a move
-    assert status["connected"] and status["profile"]["path"] == str(old)
-    assert (old / BRIDGE_FILE).exists() and not (new / BRIDGE_FILE).exists()
-
-
-def _hello(token: str, *, protocol: object = ipc.PROTOCOL_VERSION) -> str:
-    return json.dumps(
-        {
-            "t": "hello",
-            "token": token,
-            "protocol": protocol,
-            "addonVersion": "1.3.0",
-            "app": {"name": "Thunderbird", "version": "155.0"},
-            "capabilities": {"experiment": True, "namespaces": ["messages"]},
-        }
-    )
-
-
-async def _settled(daemon: Daemon, predicate, *, timeout: float = 2.0) -> dict:
-    """The summary once it says what the test is waiting for.
-
-    Both ends of a close race: the client is told before the server's handler has
-    finished unwinding, and a connection that never upgrades is only recorded when
-    websockets gives up on it.
-    """
-    deadline = time.monotonic() + timeout
-    while True:
-        summary = daemon.handshakes.summary()
-        if predicate(summary):
-            return summary
-        if time.monotonic() >= deadline:
-            raise AssertionError(f"handshake summary never settled: {summary}")
-        await asyncio.sleep(0.02)
-
-
-class TestHandshakeTelemetry:
-    async def test_a_client_that_never_says_hello_is_recorded(
-        self, isolated_state, monkeypatch
-    ) -> None:
-        monkeypatch.setattr("tbmcp.daemon.HELLO_TIMEOUT", 0.3)
-        daemon = _daemon(isolated_state)
-        async with daemon._addon_server(open_timeout=0.3) as server:
-            port = server.sockets[0].getsockname()[1]
-            async with ws_connect(f"ws://127.0.0.1:{port}/tbmcp") as ws:
-                with pytest.raises(ConnectionClosed):
-                    await asyncio.wait_for(ws.recv(), timeout=5.0)
-                assert ws.close_code == 4002
-
-        summary = daemon.status()["handshake"]
-        assert summary["lastOutcome"] == "no-hello-timeout"
-        assert summary["recentFailures"] == 1
-
-    async def test_a_stale_token_is_recorded_without_being_logged(
-        self, isolated_state, caplog
-    ) -> None:
-        daemon = _daemon(isolated_state)
-        with caplog.at_level(logging.DEBUG):
-            async with daemon._addon_server(open_timeout=0.3) as server:
-                port = server.sockets[0].getsockname()[1]
-                async with ws_connect(f"ws://127.0.0.1:{port}/tbmcp") as ws:
-                    await ws.send(_hello("not-the-token"))
-                    with pytest.raises(ConnectionClosed):
-                        await asyncio.wait_for(ws.recv(), timeout=5.0)
-                    assert ws.close_code == 4001
-
-        summary = daemon.handshakes.summary()
-        assert summary["lastOutcome"] == "bad-token"
-        assert daemon.addon_token not in caplog.text, "a token must never reach a log"
-
-    async def test_a_non_numeric_protocol_is_a_mismatch_not_a_crash(
-        self, isolated_state, caplog
-    ) -> None:
-        """`int(hello["protocol"])` on a string raised straight out of the handler:
-        websockets logged a traceback and the add-on learnt nothing."""
-        daemon = _daemon(isolated_state)
-        with caplog.at_level(logging.DEBUG):
-            async with daemon._addon_server(open_timeout=0.3) as server:
-                port = server.sockets[0].getsockname()[1]
-                async with ws_connect(f"ws://127.0.0.1:{port}/tbmcp") as ws:
-                    await ws.send(_hello(daemon.addon_token, protocol="x"))
-                    with pytest.raises(ConnectionClosed):
-                        await asyncio.wait_for(ws.recv(), timeout=5.0)
-                    assert ws.close_code == 4002
-
-        assert daemon.handshakes.summary()["lastOutcome"] == "protocol-mismatch"
-        assert "Traceback" not in caplog.text
-
-    async def test_a_good_hello_is_welcomed_and_then_disconnects(self, isolated_state) -> None:
-        daemon = _daemon(isolated_state)
-        async with daemon._addon_server(open_timeout=0.3) as server:
-            port = server.sockets[0].getsockname()[1]
-            async with ws_connect(f"ws://127.0.0.1:{port}/tbmcp") as ws:
-                await ws.send(_hello(daemon.addon_token))
-                welcome = json.loads(await asyncio.wait_for(ws.recv(), timeout=5.0))
-                assert welcome["t"] == "welcome"
-                assert daemon.status()["connected"] is True
-
-            summary = await _settled(daemon, lambda s: s["lastOutcome"] == "disconnected")
-
-        assert summary["lastCloseCode"] == 1000
-        assert summary["recentFailures"] == 0
-        assert summary["recent"][-1]["addonVersion"] == "1.3.0"
-
-    async def test_the_session_that_is_replaced_reads_as_superseded(self, isolated_state) -> None:
-        daemon = _daemon(isolated_state)
-        async with daemon._addon_server(open_timeout=0.3) as server:
-            port = server.sockets[0].getsockname()[1]
-            async with ws_connect(f"ws://127.0.0.1:{port}/tbmcp") as first:
-                await first.send(_hello(daemon.addon_token))
-                await asyncio.wait_for(first.recv(), timeout=5.0)
-
-                async with ws_connect(f"ws://127.0.0.1:{port}/tbmcp") as second:
-                    await second.send(_hello(daemon.addon_token))
-                    await asyncio.wait_for(second.recv(), timeout=5.0)
-                    with pytest.raises(ConnectionClosed):
-                        await asyncio.wait_for(first.recv(), timeout=5.0)
-                    assert first.close_code == 1012
-
-                    summary = await _settled(
-                        daemon, lambda s: s["recent"][0]["outcome"] == "superseded"
-                    )
-
-        assert [row["outcome"] for row in summary["recent"]] == ["superseded", "welcomed"]
-
-    async def test_a_connection_that_never_upgrades_is_recorded(self, isolated_state) -> None:
-        """The one the handler cannot see: the socket opens, nothing is sent, and
-        websockets drops it when `open_timeout` expires without ever calling us."""
-        daemon = _daemon(isolated_state)
-        async with daemon._addon_server(open_timeout=0.3) as server:
-            port = server.sockets[0].getsockname()[1]
-            _reader, writer = await asyncio.open_connection("127.0.0.1", port)
-            try:
-                summary = await _settled(daemon, lambda s: s["lastOutcome"] == "no-upgrade")
-            finally:
-                writer.close()
-                with contextlib.suppress(OSError):
-                    await writer.wait_closed()
-
-        assert summary["recentFailures"] == 1
-
-    async def test_a_failing_handshake_reaches_the_caller_of_a_tool(
-        self, isolated_state, monkeypatch
-    ) -> None:
-        """The payoff: every "not connected" now carries why, instead of leaving the
-        model to guess between "start Thunderbird" and a broken add-on."""
-        monkeypatch.setattr("tbmcp.daemon.HELLO_TIMEOUT", 0.3)
-        daemon = _daemon(isolated_state)
-        async with daemon._addon_server(open_timeout=0.3) as server:
-            port = server.sockets[0].getsockname()[1]
-            async with ws_connect(f"ws://127.0.0.1:{port}/tbmcp") as ws:
-                with pytest.raises(ConnectionClosed):
-                    await asyncio.wait_for(ws.recv(), timeout=5.0)
-
-            with pytest.raises(NotConnectedError) as caught:
-                await daemon._invoke("messages.query", {}, timeout=1, on_progress=None)
-
-        assert "never completed the handshake" in caught.value.message
-
-    def test_standing_down_leaves_the_winners_files_alone(self, isolated_state) -> None:
-        """`_cleanup` unlinked both files unconditionally, so a daemon that stood
-        down because it had been superseded deleted the *winner's* pairing file and
-        advertisement — and the add-on was left holding a token nobody listened for."""
-        daemon = _daemon(isolated_state)
-        bridge_file = isolated_state / BRIDGE_FILE
-        bridge_file.write_text(json.dumps({"port": 1, "token": "theirs", "pid": 999_001}))
-        ipc.DaemonInfo(
-            version=ipc.PROTOCOL_VERSION, port=1, token="theirs", pid=999_001, profile=""
-        ).write()
-
-        daemon._cleanup()
-
-        assert bridge_file.is_file(), "deleted the winner's pairing file"
-        assert ipc.DaemonInfo.path().is_file(), "deleted the winner's advertisement"
-
-    def test_a_daemon_still_clears_up_after_itself(self, isolated_state) -> None:
-        daemon = _daemon(isolated_state)
-        daemon._write_bridge_file(51234)
-        ipc.DaemonInfo(
-            version=ipc.PROTOCOL_VERSION,
-            port=1,
-            token="ours",
-            pid=os.getpid(),
-            profile=str(isolated_state),
-        ).write()
-
-        daemon._cleanup()
-
-        assert not (isolated_state / BRIDGE_FILE).exists()
-        assert not ipc.DaemonInfo.path().exists()
-
-
 # ------------------------------------------------------------- the daemon's log
 #
 # The daemon is spawned detached with stdout and stderr on DEVNULL, so until now
@@ -571,7 +171,7 @@ def test_the_daemon_command_opens_a_log_file_it_can_be_read_back_from(
     async def _run(*_args, **_kwargs) -> int:
         return 0
 
-    monkeypatch.setattr("tbmcp.daemon.run_daemon", _run)
+    monkeypatch.setattr("tbmcp.daemon_run.run_daemon", _run)
     caplog.set_level(logging.INFO)
     root = logging.getLogger()
     before = list(root.handlers)

@@ -11,8 +11,8 @@ from typing import Any
 
 import pytest
 
-from tbmcp import addon_install, safety
-from tbmcp import bridge as bridge_module
+from tbmcp import bridge_spawn as bridge_module
+from tbmcp import safety, thunderbird_process
 from tbmcp.config import Settings
 
 
@@ -106,5 +106,42 @@ def reset_settings():
 
 @pytest.fixture(autouse=True)
 def no_running_command_lines(monkeypatch):
-    monkeypatch.setattr(addon_install, "running_command_lines", lambda: [])
-    monkeypatch.setattr(addon_install, "saved_user_variable", lambda _name: None)
+    monkeypatch.setattr(thunderbird_process, "running_command_lines", lambda: [])
+    monkeypatch.setattr(thunderbird_process, "saved_user_variable", lambda _name: None)
+
+
+@pytest.fixture
+def no_stray_interpreters(monkeypatch):
+    """Keep bootstrap interpreter discovery independent of machine PATH contents."""
+    monkeypatch.setattr("shutil.which", lambda name: None)
+
+
+@pytest.fixture
+def clean_tbmcp_env(monkeypatch):
+    """`Settings.from_env()` reads these; strip them so the test's outcome depends
+    only on what it configures explicitly, not on this machine's shell."""
+    for var in (
+        "TBMCP_TOOLSETS",
+        "TBMCP_READ_ONLY",
+        "TBMCP_YOLO",
+        "TBMCP_UNSAFE_PREFS",
+        "TBMCP_SEND",
+        "TBMCP_PROFILE",
+        "TBMCP_TIMEOUT",
+        "TBMCP_NO_AUTOSTART",
+        "TBMCP_TOOLS",
+        "TBMCP_CONFIG",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+
+@pytest.fixture
+def isolated_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+    monkeypatch.setenv("TBMCP_STATE_DIR", str(tmp_path))
+    from tbmcp.ipc import DaemonInfo
+
+    DaemonInfo.clear()
+    yield tmp_path
+    DaemonInfo.clear()

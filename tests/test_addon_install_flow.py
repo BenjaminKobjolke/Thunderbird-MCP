@@ -16,7 +16,7 @@ import pathlib
 
 import pytest
 
-from tbmcp import addon_install
+from tbmcp import addon_install, thunderbird_process
 from tbmcp.errors import TbmcpError
 
 EXPECTED_VERSION = "9.9.9"
@@ -59,11 +59,11 @@ def flow(monkeypatch, tmp_path):
     package = tmp_path / "bridge.xpi"
     package.write_bytes(b"not really a zip")
 
-    monkeypatch.setattr(addon_install, "find_thunderbird", lambda: pathlib.Path("tb.exe"))
+    monkeypatch.setattr(thunderbird_process, "find_thunderbird", lambda: pathlib.Path("tb.exe"))
     monkeypatch.setattr(addon_install, "build_xpi", lambda _dest: package)
     monkeypatch.setattr(addon_install, "addon_id", lambda: "bridge@example")
     monkeypatch.setattr(addon_install, "addon_version", lambda src=None: EXPECTED_VERSION)
-    monkeypatch.setattr(addon_install, "is_running", lambda: True)
+    monkeypatch.setattr(thunderbird_process, "is_running", lambda: True)
 
     def stop(timeout=60.0):
         calls["stop"] += 1
@@ -75,8 +75,8 @@ def flow(monkeypatch, tmp_path):
     def restart(exe, profile, restart):
         calls["restart"] += 1
 
-    monkeypatch.setattr(addon_install, "_stop", stop)
-    monkeypatch.setattr(addon_install, "_launch", launch)
+    monkeypatch.setattr(thunderbird_process, "_stop", stop)
+    monkeypatch.setattr(thunderbird_process, "_launch", launch)
     monkeypatch.setattr(addon_install, "_restart_plain", restart)
     monkeypatch.setattr(addon_install.marionette, "wait_for_port", lambda timeout=0: True)
 
@@ -158,9 +158,11 @@ def test_the_failure_text_does_not_claim_a_restart_that_no_restart_prevented(flo
 
 def test_refusal_names_each_remaining_window_without_launching(flow, monkeypatch):
     calls = flow(FakeClient(None))
-    monkeypatch.setattr(addon_install.sys, "platform", "win32")
-    monkeypatch.setattr(addon_install, "_stop", lambda timeout=60.0: False)
-    monkeypatch.setattr(addon_install, "open_windows", lambda: [(1, "Inbox"), (2, "Write: Draft")])
+    monkeypatch.setattr(thunderbird_process.sys, "platform", "win32")
+    monkeypatch.setattr(thunderbird_process, "_stop", lambda timeout=60.0: False)
+    monkeypatch.setattr(
+        thunderbird_process, "open_windows", lambda: [(1, "Inbox"), (2, "Write: Draft")]
+    )
     with pytest.raises(TbmcpError) as caught:
         addon_install.install_automatic()
     assert caught.value.code == "WONT_CLOSE"
@@ -171,9 +173,9 @@ def test_refusal_names_each_remaining_window_without_launching(flow, monkeypatch
 
 def test_refusal_without_visible_windows_explains_running_process(flow, monkeypatch):
     flow(FakeClient(None))
-    monkeypatch.setattr(addon_install.sys, "platform", "win32")
-    monkeypatch.setattr(addon_install, "_stop", lambda timeout=60.0: False)
-    monkeypatch.setattr(addon_install, "open_windows", lambda: [])
+    monkeypatch.setattr(thunderbird_process.sys, "platform", "win32")
+    monkeypatch.setattr(thunderbird_process, "_stop", lambda timeout=60.0: False)
+    monkeypatch.setattr(thunderbird_process, "open_windows", lambda: [])
     with pytest.raises(TbmcpError) as caught:
         addon_install.install_automatic()
     assert "no visible windows remain but the process is still running" in str(caught.value)
@@ -183,7 +185,7 @@ def test_closed_thunderbird_starts_without_stop(flow, monkeypatch):
     calls = flow(
         FakeClient({"result": {"ok": True, "version": EXPECTED_VERSION, "isActive": True}})
     )
-    monkeypatch.setattr(addon_install, "is_running", lambda: False)
+    monkeypatch.setattr(thunderbird_process, "is_running", lambda: False)
     outcome = addon_install.install_automatic()
     assert outcome.ok
     assert calls["stop"] == 1  # cleanup after the automation session, never before launch

@@ -1,0 +1,6930 @@
+{
+  "mail": [
+    {
+      "name": "mail_search",
+      "title": "Search mail",
+      "description": "Search the user's mail. Combine `full_text` with any filters below.\n\n`full_text` uses Thunderbird's global index and searches headers and bodies\nof already-indexed messages; `subject`/`author`/`body` are substring matches\nevaluated per folder. Dates are ISO-8601. Results come newest first; `sort`\n\"oldest\" reverses that, \"none\" returns folder storage order (faster on huge\nresult sets). Results are summaries — call\n`mail_get` for a body. Continue with `cursor=nextCursor`. A first page\ncarries `scope` — the folder and account ids the query covered — so an empty\nresult can be read against what was actually searched.",
+      "inputSchema": {
+        "properties": {
+          "full_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Full Text"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author"
+          },
+          "recipients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Recipients"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Folder Id"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Id"
+          },
+          "include_subfolders": {
+            "default": true,
+            "title": "Include Subfolders",
+            "type": "boolean"
+          },
+          "unread": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unread"
+          },
+          "flagged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Flagged"
+          },
+          "junk": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Junk"
+          },
+          "has_attachment": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Has Attachment"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tags"
+          },
+          "tag_mode": {
+            "default": "any",
+            "enum": [
+              "all",
+              "any",
+              "none"
+            ],
+            "title": "Tag Mode",
+            "type": "string"
+          },
+          "from_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "From Date"
+          },
+          "to_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "To Date"
+          },
+          "to_me": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "To Me"
+          },
+          "from_me": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "From Me"
+          },
+          "min_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Size"
+          },
+          "max_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Size"
+          },
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          },
+          "sort": {
+            "default": "newest",
+            "enum": [
+              "newest",
+              "oldest",
+              "none"
+            ],
+            "title": "Sort",
+            "type": "string"
+          }
+        },
+        "title": "mail_searchArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_list",
+      "title": "List mail",
+      "description": "List one folder or every folder of a type, newest first by default.\n\n`special_use=\"inbox\"` lists the newest messages of every account's inbox\nin one call — the answer to \"what is my newest email\". Use `folder_list`\nto discover one folder's id. For selective queries, use `mail_search`.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Folder Id"
+          },
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          },
+          "sort_by": {
+            "default": "date",
+            "enum": [
+              "date",
+              "subject",
+              "author",
+              "size",
+              "read",
+              "flagged"
+            ],
+            "title": "Sort By",
+            "type": "string"
+          },
+          "descending": {
+            "default": true,
+            "title": "Descending",
+            "type": "boolean"
+          },
+          "special_use": {
+            "anyOf": [
+              {
+                "enum": [
+                  "inbox",
+                  "drafts",
+                  "sent",
+                  "trash",
+                  "templates",
+                  "archives",
+                  "junk"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Special Use"
+          }
+        },
+        "title": "mail_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_get",
+      "title": "Read a message",
+      "description": "Read one message. `text` gives headers plus the plain-text body.\n\n`summary` skips the body entirely; `full` adds the MIME part tree and every\nheader. Encrypted mail is decrypted when Thunderbird can.",
+      "inputSchema": {
+        "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "text",
+            "enum": [
+              "summary",
+              "text",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "decrypt": {
+            "default": true,
+            "title": "Decrypt",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_id"
+        ],
+        "title": "mail_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_get_many",
+      "title": "Read several messages at once",
+      "description": "Read up to 50 messages in one round trip — for triaging a search result.",
+      "inputSchema": {
+        "properties": {
+          "message_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Message Ids",
+            "type": "array"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "text"
+            ],
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message_ids"
+        ],
+        "title": "mail_get_manyArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_get_source",
+      "title": "Get raw message source",
+      "description": "Fetch a message's raw RFC 5322 source, for header forensics.\n\nOn IMAP this needs the message to be available offline; the tool says so\nrather than returning a partial.",
+      "inputSchema": {
+        "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "integer"
+          },
+          "decrypt": {
+            "default": false,
+            "title": "Decrypt",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_id"
+        ],
+        "title": "mail_get_sourceArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_attachments",
+      "title": "List attachments",
+      "description": "List a message's attachments with part names, sizes and content types.",
+      "inputSchema": {
+        "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "message_id"
+        ],
+        "title": "mail_attachmentsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_save_attachment",
+      "title": "Save an attachment",
+      "description": "Write one attachment to a directory on this machine.\n\n`part_name` comes from `mail_attachments`. Refuses to clobber an existing\nfile unless `overwrite=true`.",
+      "inputSchema": {
+        "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "integer"
+          },
+          "part_name": {
+            "title": "Part Name",
+            "type": "string"
+          },
+          "directory": {
+            "title": "Directory",
+            "type": "string"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Filename"
+          },
+          "overwrite": {
+            "default": false,
+            "title": "Overwrite",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_id",
+          "part_name",
+          "directory"
+        ],
+        "title": "mail_save_attachmentArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_mark",
+      "title": "Mark messages",
+      "description": "Set read/flagged/junk state or adjust tags on one or more messages.\n\nCheap and reversible, so no confirmation is required. Tag keys come from\n`mail_tags`.\nThe reply reports each updated message's earlier flags and tags for undo.",
+      "inputSchema": {
+        "properties": {
+          "message_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Message Ids",
+            "type": "array"
+          },
+          "read": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Read"
+          },
+          "flagged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Flagged"
+          },
+          "junk": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Junk"
+          },
+          "add_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Add Tags"
+          },
+          "remove_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Remove Tags"
+          }
+        },
+        "required": [
+          "message_ids"
+        ],
+        "title": "mail_markArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_move",
+      "title": "Move messages",
+      "description": "Move messages into another folder.\n\nOn IMAP the move is asynchronous — the tool waits for Thunderbird to confirm\nbefore returning, so a following search reflects the change.\nMoves allowed in the tbmcp config skip confirmation.\nThe reply reports each message's source and any observed landing folder for undo.",
+      "inputSchema": {
+        "properties": {
+          "message_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Message Ids",
+            "type": "array"
+          },
+          "destination_folder_id": {
+            "title": "Destination Folder Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_ids",
+          "destination_folder_id"
+        ],
+        "title": "mail_moveArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_copy",
+      "title": "Copy messages",
+      "description": "Copy messages into another folder, leaving the originals in place.\n\nThe reply reports each source and any observed copy location for undo.",
+      "inputSchema": {
+        "properties": {
+          "message_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Message Ids",
+            "type": "array"
+          },
+          "destination_folder_id": {
+            "title": "Destination Folder Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_ids",
+          "destination_folder_id"
+        ],
+        "title": "mail_copyArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_archive",
+      "title": "Archive messages",
+      "description": "Archive messages using each account's configured archive layout.\n\nThe reply reports each source and any observed archive location for undo.",
+      "inputSchema": {
+        "properties": {
+          "message_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Message Ids",
+            "type": "array"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_ids"
+        ],
+        "title": "mail_archiveArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_delete",
+      "title": "Delete messages",
+      "description": "Delete messages. Moves to Trash unless `permanent=true`.\n\nA permanent delete cannot be undone from Thunderbird, so prefer the default\nand let the user empty Trash themselves.",
+      "inputSchema": {
+        "properties": {
+          "message_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Message Ids",
+            "type": "array"
+          },
+          "permanent": {
+            "default": false,
+            "title": "Permanent",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_ids"
+        ],
+        "title": "mail_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_tags",
+      "title": "List message tags",
+      "description": "List the tags defined in Thunderbird, with keys, labels and colours.",
+      "inputSchema": {
+        "properties": {},
+        "title": "mail_tagsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_tag_upsert",
+      "title": "Create or update a tag",
+      "description": "Create a tag, or recolour/rename an existing one.\n\n`color` is `#RRGGBB`. Omit `key` to create a new tag; pass an existing key to\nupdate it.",
+      "inputSchema": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Key"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Color"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "mail_tag_upsertArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_tag_delete",
+      "title": "Delete a tag",
+      "description": "Remove a tag definition. Messages keep the raw keyword but lose the label.",
+      "inputSchema": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "title": "mail_tag_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "folders": [
+    {
+      "name": "folder_list",
+      "title": "List folders",
+      "description": "List mail folders with their ids and message counts.\n\nWith no filters this browses: every account's root folder plus one level\nbelow it. Raise `depth` to walk further, or give a filter — `name` is a\ncase-insensitive substring — and the whole tree is searched instead. Pass\n`tree=true` to get folders nested under `children` rather than flat.\n\nCounts come from Thunderbird's own folder database. On IMAP that database\ncan lag until the folder has been selected once in Thunderbird, so treat\nunread and total counts as close rather than exact.",
+      "inputSchema": {
+        "properties": {
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parent Id"
+          },
+          "special_use": {
+            "anyOf": [
+              {
+                "enum": [
+                  "inbox",
+                  "drafts",
+                  "sent",
+                  "trash",
+                  "templates",
+                  "archives",
+                  "junk"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Special Use"
+          },
+          "is_virtual": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Virtual"
+          },
+          "is_tag": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Tag"
+          },
+          "is_unified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Unified"
+          },
+          "is_favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Favorite"
+          },
+          "is_root": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Root"
+          },
+          "has_unread_messages": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Has Unread Messages"
+          },
+          "depth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Depth"
+          },
+          "tree": {
+            "default": false,
+            "title": "Tree",
+            "type": "boolean"
+          },
+          "include_counts": {
+            "default": true,
+            "title": "Include Counts",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 200,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "folder_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_get",
+      "title": "Get a folder",
+      "description": "Get one folder: counts, special use, flags and IMAP quota.\n\nUse this to re-check a count after a move or a delete; `folder_list` is the\ncheaper way to find the id in the first place.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "include_subfolders": {
+            "default": false,
+            "title": "Include Subfolders",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id"
+        ],
+        "title": "folder_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_capabilities",
+      "title": "Get folder capabilities",
+      "description": "Report what may be done to a folder before attempting it.\n\nAnswers whether the folder can hold messages, take subfolders, be renamed,\nbe deleted, or have messages deleted from it. Worth a call before offering\nthe user a plan that a server would refuse.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "folder_id"
+        ],
+        "title": "folder_capabilitiesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_get_unified",
+      "title": "Get a unified folder",
+      "description": "Get the unified folder that spans every account, e.g. all inboxes at once.\n\nIts id works with `mail_list`. For one call that finds and lists all inboxes,\nuse `mail_list(special_use=\"inbox\")`.",
+      "inputSchema": {
+        "properties": {
+          "folder_type": {
+            "enum": [
+              "inbox",
+              "drafts",
+              "sent",
+              "trash",
+              "templates",
+              "archives",
+              "junk"
+            ],
+            "title": "Folder Type",
+            "type": "string"
+          },
+          "include_subfolders": {
+            "default": false,
+            "title": "Include Subfolders",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_type"
+        ],
+        "title": "folder_get_unifiedArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_create",
+      "title": "Create a folder",
+      "description": "Create a folder inside another folder, or at the top of an account.\n\nFolders allowed in the tbmcp config skip confirmation.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parent Id"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Id"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "folder_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_rename",
+      "title": "Rename a folder",
+      "description": "Rename a folder, keeping its messages and subfolders.\n\nFolders allowed in the tbmcp config skip confirmation.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "new_name": {
+            "title": "New Name",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id",
+          "new_name"
+        ],
+        "title": "folder_renameArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_move",
+      "title": "Move a folder",
+      "description": "Move a folder under a different parent, with its subfolders.\n\n`destination_id` is the new parent folder — use an account's root folder to\nmove it to the top level. Across accounts this copies then deletes, which on\nIMAP can take a while.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "destination_id": {
+            "title": "Destination Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id",
+          "destination_id"
+        ],
+        "title": "folder_moveArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_copy",
+      "title": "Copy a folder",
+      "description": "Copy a folder and its contents under another parent, leaving the original.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "destination_id": {
+            "title": "Destination Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id",
+          "destination_id"
+        ],
+        "title": "folder_copyArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_delete",
+      "title": "Delete a folder",
+      "description": "Delete a folder, its subfolders and every message in them.\n\nThunderbird moves the folder to Trash unless it is already inside Trash, in\nwhich case it goes for good. Check `folder_get` first if the count matters —\nthe reply reports what was removed, but cannot put it back.\nEmpty subfolders allowed in the tbmcp config skip confirmation.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id"
+        ],
+        "title": "folder_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_mark_read",
+      "title": "Mark a folder read",
+      "description": "Mark every message in a folder as read.\n\nThere is no per-message undo for this, which is why it asks first. On IMAP\nthe flags are pushed to the server.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "include_subfolders": {
+            "default": false,
+            "title": "Include Subfolders",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id"
+        ],
+        "title": "folder_mark_readArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_set_favorite",
+      "title": "Favourite a folder",
+      "description": "Add or remove a folder from the user's favourites.\n\nCosmetic and reversible — it only affects the folder pane's Favourites view,\nso it is not gated. Prompting for something this harmless would only train\nthe user to click through the prompts that do matter.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "favorite": {
+            "default": true,
+            "title": "Favorite",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id"
+        ],
+        "title": "folder_set_favoriteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_empty_trash",
+      "title": "Empty Trash",
+      "description": "Permanently delete everything in one account's Trash.\n\nThis is not recoverable from Thunderbird. Give `account_id` and the account's\nconfigured Trash is used; give `folder_id` to empty a specific one. Subfolders\nof Trash are removed too unless `remove_subfolders=false`.",
+      "inputSchema": {
+        "properties": {
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Id"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Folder Id"
+          },
+          "remove_subfolders": {
+            "default": true,
+            "title": "Remove Subfolders",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "title": "folder_empty_trashArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_empty_junk",
+      "title": "Empty Junk",
+      "description": "Permanently delete everything in one account's Junk folder.\n\nSubfolders of Junk are emptied but kept, since they are usually filter\ntargets the user set up deliberately. Not recoverable.",
+      "inputSchema": {
+        "properties": {
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Id"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Folder Id"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "title": "folder_empty_junkArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_sync_offline",
+      "title": "Download a folder for offline use",
+      "description": "Fetch an IMAP folder's message bodies so they are available offline.\n\nThis is what `mail_get_source` needs before it can return raw source for an\nIMAP message. A large folder means a long download and real network traffic.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "title": "Folder Id",
+            "type": "string"
+          },
+          "include_subfolders": {
+            "default": false,
+            "title": "Include Subfolders",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "folder_id"
+        ],
+        "title": "folder_sync_offlineArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "folder_compact",
+      "title": "Compact folders",
+      "description": "Reclaim the disk space left behind by deleted messages.\n\nDeleted mail stays in the message store until the folder is compacted. Pass\n`folder_id` for one folder or `account_id` for all of an account's. Nothing\nreadable is lost, but the store is rewritten, so do not interrupt it.",
+      "inputSchema": {
+        "properties": {
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Folder Id"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Id"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "title": "folder_compactArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "compose": [
+    {
+      "name": "mail_send",
+      "title": "Send or draft a message",
+      "description": "Write a message. Saves a reviewable draft unless `mode=\"send\"`.\n\n`mode=\"later\"` queues it in the Outbox instead. Recipients are one address per\nlist entry. `attachments` are paths to files on this machine. A draft still\nasks for confirmation, because the identical call with `mode=\"send\"` would\ndeliver it. Set `reply_to_message_id` to thread the message under an existing\none — but `mail_reply` is usually what you want, since it also quotes.\n`inline_images` maps names to image paths; place `<img src=\"cid:NAME\">` in\nan HTML body and set `is_html=true`.",
+      "inputSchema": {
+        "properties": {
+          "to": {
+            "items": {
+              "type": "string"
+            },
+            "title": "To",
+            "type": "array"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "cc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cc"
+          },
+          "bcc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bcc"
+          },
+          "is_html": {
+            "default": false,
+            "title": "Is Html",
+            "type": "boolean"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attachments"
+          },
+          "inline_images": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Inline Images"
+          },
+          "identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Identity Id"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "send",
+                  "later"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mode"
+          },
+          "reply_to_message_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reply To Message Id"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "enum": [
+                  "lowest",
+                  "low",
+                  "normal",
+                  "high",
+                  "highest"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Priority"
+          },
+          "return_receipt": {
+            "default": false,
+            "title": "Return Receipt",
+            "type": "boolean"
+          },
+          "delivery_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "plaintext",
+                  "html",
+                  "both"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Delivery Format"
+          },
+          "custom_headers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Custom Headers"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "body"
+        ],
+        "title": "mail_sendArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "mail_reply",
+      "title": "Reply to a message",
+      "description": "Reply to a message. Saves a reviewable draft unless `mode=\"send\"`.\n\nThunderbird derives the recipients, the subject and the quoted original;\n`body` goes above the quote. `reply_all` copies everyone, `reply_to_list`\nanswers the mailing list. Passing `cc` replaces the addresses Thunderbird\nderived, so leave it unset unless that is the intent.\n`inline_images` maps names to image paths; place `<img src=\"cid:NAME\">` in\nan HTML body and set `is_html=true`.",
+      "inputSchema": {
+        "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "integer"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "reply_all": {
+            "default": false,
+            "title": "Reply All",
+            "type": "boolean"
+          },
+          "reply_to_list": {
+            "default": false,
+            "title": "Reply To List",
+            "type": "boolean"
+          },
+          "quote_original": {
+            "default": true,
+            "title": "Quote Original",
+            "type": "boolean"
+          },
+          "is_html": {
+            "default": false,
+            "title": "Is Html",
+            "type": "boolean"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "cc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cc"
+          },
+          "bcc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bcc"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attachments"
+          },
+          "inline_images": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Inline Images"
+          },
+          "identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Identity Id"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "send",
+                  "later"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mode"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_id",
+          "body"
+        ],
+        "title": "mail_replyArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "mail_forward",
+      "title": "Forward a message",
+      "description": "Forward a message. Saves a reviewable draft unless `mode=\"send\"`.\n\n`inline` quotes the original in the body; `attachment` attaches it as a\n`.eml`, which preserves the headers a recipient may need. `body` is your\ncovering note and goes above the forwarded text.\n`inline_images` maps names to image paths; place `<img src=\"cid:NAME\">` in\nan HTML body and set `is_html=true`.",
+      "inputSchema": {
+        "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "integer"
+          },
+          "to": {
+            "items": {
+              "type": "string"
+            },
+            "title": "To",
+            "type": "array"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "forward_as": {
+            "default": "inline",
+            "enum": [
+              "inline",
+              "attachment"
+            ],
+            "title": "Forward As",
+            "type": "string"
+          },
+          "cc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cc"
+          },
+          "bcc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bcc"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "is_html": {
+            "default": false,
+            "title": "Is Html",
+            "type": "boolean"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attachments"
+          },
+          "inline_images": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Inline Images"
+          },
+          "identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Identity Id"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "send",
+                  "later"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mode"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_id",
+          "to"
+        ],
+        "title": "mail_forwardArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "mail_draft_save",
+      "title": "Save a draft or template",
+      "description": "Save a message without sending it, as a draft or a template.\n\nNothing leaves the machine, so this is not gated — a draft is exactly the\nthing to produce when you want the user to review before anything is sent.\nA template is the reusable kind: Thunderbird keeps it in Templates and opens\na copy when the user picks it. Recipients are optional here, unlike a send.\n`inline_images` maps names to image paths; place `<img src=\"cid:NAME\">` in\nan HTML body and set `is_html=true`.",
+      "inputSchema": {
+        "properties": {
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "To"
+          },
+          "cc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cc"
+          },
+          "bcc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bcc"
+          },
+          "kind": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "template"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "is_html": {
+            "default": false,
+            "title": "Is Html",
+            "type": "boolean"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attachments"
+          },
+          "inline_images": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Inline Images"
+          },
+          "identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Identity Id"
+          }
+        },
+        "title": "mail_draft_saveArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_compose_open",
+      "title": "Open a compose window",
+      "description": "Open a populated compose window for the user to finish by hand.\n\nThe right answer whenever the wording matters more than the automation, or\nwhen the user declined a send: they get the draft in front of them with the\ncursor in it. Nothing is sent or saved, and the user sees the window appear,\nso this is not gated.\n`inline_images` maps names to image paths; place `<img src=\"cid:NAME\">` in\nan HTML body and set `is_html=true`.",
+      "inputSchema": {
+        "properties": {
+          "to": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "To"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "cc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cc"
+          },
+          "bcc": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bcc"
+          },
+          "is_html": {
+            "default": false,
+            "title": "Is Html",
+            "type": "boolean"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attachments"
+          },
+          "inline_images": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Inline Images"
+          },
+          "identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Identity Id"
+          },
+          "reply_to_message_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reply To Message Id"
+          },
+          "forward_message_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Forward Message Id"
+          },
+          "reply_all": {
+            "default": false,
+            "title": "Reply All",
+            "type": "boolean"
+          },
+          "quote_original": {
+            "default": true,
+            "title": "Quote Original",
+            "type": "boolean"
+          }
+        },
+        "title": "mail_compose_openArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mail_send_status",
+      "title": "Check what is waiting to be sent",
+      "description": "List messages sitting in the Outbox, unsent.\n\nAn empty list is the normal answer. Anything here was queued with\n`mode=\"later\"`, or written while Thunderbird was offline, and will go out on\nthe next 'Send Unsent Messages'.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "mail_send_statusArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "search": [
+    {
+      "name": "search_global",
+      "title": "Search everything",
+      "description": "Ranked full-corpus search across every indexed folder and account.\n\nBest for open questions — \"what did we agree about the shipment\", \"anything\nfrom the accountant about VAT\". Results carry a relevance score and a\nconversation id you can pass to `search_conversation`. For precise filters\n(one folder, unread only, a date range) use `mail_search` instead.\n\nIf this returns nothing unexpectedly, call `search_index_status`: the global\nindexer can be disabled or still catching up.\n\n`matched` is how many of the retrieved messages matched, and it is the\ntotal only when `truncated` is absent; a truncated search ranked as deep\nas it could and there may be more below. `unmatchableTerms` names words\nthe index cannot look up at all — anything that breaks into pieces of\nfewer than three characters, like \"2.0\" — and because every term has to\nmatch, one of those is enough to empty the result.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Folder Id"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "search_globalArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_conversation",
+      "title": "Read a whole conversation",
+      "description": "Every message in one thread, oldest first, across folders and accounts.\n\nGive either a `message_id` from `mail_search` or an RFC `header_message_id`.\nThis is how you reconstruct a discussion that spans Inbox, Sent and an\narchive folder without three separate searches.",
+      "inputSchema": {
+        "properties": {
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Id"
+          },
+          "header_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Header Message Id"
+          },
+          "limit": {
+            "default": 100,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "search_conversationArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_index_status",
+      "title": "Global index status",
+      "description": "Whether Thunderbird's global index is enabled, and how far along it is.\n\nCall this to explain an empty `search_global` result. When indexing is off,\n`mail_search` with `subject`/`author`/`body` filters still works.",
+      "inputSchema": {
+        "properties": {},
+        "title": "search_index_statusArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_saved_list",
+      "title": "List saved searches",
+      "description": "List the saved searches (virtual folders) and what each one matches.",
+      "inputSchema": {
+        "properties": {},
+        "title": "search_saved_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_saved_create",
+      "title": "Create a saved search",
+      "description": "Create a saved search that appears in the folder pane.\n\n`search_folder_ids` are folders to look in (from `folder_list`). Each term is\n`{\"attribute\": \"subject\", \"operator\": \"contains\", \"value\": \"invoice\"}`;\nattributes and operators are listed in the error message if you get one\nwrong. `match_all=false` makes the terms OR together. `online_search` asks\nthe IMAP server to run the search instead of using the local database.\n\nNothing is copied or moved — a saved search is a stored query.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "search_folder_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Search Folder Ids",
+            "type": "array"
+          },
+          "terms": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Terms",
+            "type": "array"
+          },
+          "match_all": {
+            "default": true,
+            "title": "Match All",
+            "type": "boolean"
+          },
+          "online_search": {
+            "default": false,
+            "title": "Online Search",
+            "type": "boolean"
+          },
+          "parent_folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parent Folder Id"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "search_folder_ids",
+          "terms"
+        ],
+        "title": "search_saved_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_saved_update",
+      "title": "Change a saved search",
+      "description": "Redefine an existing saved search, by name or uri.\n\nOnly what you pass is replaced; `terms` replaces the whole condition list\nrather than merging, because a partial merge has no sensible meaning for a\nboolean query.",
+      "inputSchema": {
+        "properties": {
+          "saved_search": {
+            "title": "Saved Search",
+            "type": "string"
+          },
+          "search_folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search Folder Ids"
+          },
+          "terms": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Terms"
+          },
+          "online_search": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Online Search"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved_search"
+        ],
+        "title": "search_saved_updateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_saved_delete",
+      "title": "Delete a saved search",
+      "description": "Remove a saved search. The messages it listed are not touched.\n\nA saved search only stores a query, so deleting one loses the query and\nnothing else — but the query itself is not recoverable, hence the prompt.",
+      "inputSchema": {
+        "properties": {
+          "saved_search": {
+            "title": "Saved Search",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "saved_search"
+        ],
+        "title": "search_saved_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "contacts": [
+    {
+      "name": "contact_search",
+      "title": "Find a contact",
+      "description": "Look someone up in the address book.\n\nThis is the tool to reach for when the user says \"what is X's email\" — it\nmatches names, addresses, phone numbers, nicknames and organisations across\nevery address book, and `primaryEmail` on each result is the address\nThunderbird itself would use. Set `include_remote=false` to skip LDAP and\nCardDAV books, which can be slow.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "address_book_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Address Book Id"
+          },
+          "include_remote": {
+            "default": true,
+            "title": "Include Remote",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "contact_searchArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "contact_list",
+      "title": "List contacts",
+      "description": "List contacts, across every address book unless one is named.\n\nFor finding a particular person use `contact_search` instead. Continue with\n`cursor=nextCursor`; a cursor is only valid while the set of address books\nstays as it was.",
+      "inputSchema": {
+        "properties": {
+          "address_book_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Address Book Id"
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "title": "contact_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "contact_get",
+      "title": "Read a contact",
+      "description": "Read one contact in full, including its raw vCard.\n\n`include_photo` adds the picture as a data URL, which is large — leave it off\nunless the picture is the point.",
+      "inputSchema": {
+        "properties": {
+          "contact_id": {
+            "title": "Contact Id",
+            "type": "string"
+          },
+          "include_photo": {
+            "default": false,
+            "title": "Include Photo",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contact_id"
+        ],
+        "title": "contact_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "contact_create",
+      "title": "Create a contact",
+      "description": "Add a contact to an address book.\n\nThe first address in `emails` becomes the preferred one. `birthday` is\n`YYYY-MM-DD`. For postal addresses or any property not named here, pass a\ncomplete `vcard` instead of the fields. Address book ids come from\n`addressbook_list`.",
+      "inputSchema": {
+        "properties": {
+          "address_book_id": {
+            "title": "Address Book Id",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display Name"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Last Name"
+          },
+          "emails": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Emails"
+          },
+          "phones": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Phones"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organisation"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Job Title"
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nickname"
+          },
+          "birthday": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Birthday"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          },
+          "vcard": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Vcard"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "address_book_id"
+        ],
+        "title": "contact_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "contact_update",
+      "title": "Update a contact",
+      "description": "Change fields on an existing contact.\n\nFields you omit are left alone; `\"\"` or an empty list clears one. Passing\n`emails` or `phones` replaces the whole set, so include the addresses you\nwant to keep. A `vcard` replaces the entire contact.",
+      "inputSchema": {
+        "properties": {
+          "contact_id": {
+            "title": "Contact Id",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display Name"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Last Name"
+          },
+          "emails": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Emails"
+          },
+          "phones": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Phones"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organisation"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Job Title"
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nickname"
+          },
+          "birthday": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Birthday"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          },
+          "vcard": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Vcard"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contact_id"
+        ],
+        "title": "contact_updateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "contact_delete",
+      "title": "Delete a contact",
+      "description": "Delete a contact. There is no Trash for contacts, so this cannot be undone.\n\nThe contact also leaves every mailing list it was on. The returned `previous`\nholds its vCard, which is enough to recreate it with `contact_create`.",
+      "inputSchema": {
+        "properties": {
+          "contact_id": {
+            "title": "Contact Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contact_id"
+        ],
+        "title": "contact_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "addressbook_list",
+      "title": "List address books",
+      "description": "List the address books, with how many contacts and lists each holds.\n\n`readOnly` books reject writes; `remote` ones are LDAP or CardDAV. Turn\n`include_counts` off if a remote book makes this slow.",
+      "inputSchema": {
+        "properties": {
+          "include_counts": {
+            "default": true,
+            "title": "Include Counts",
+            "type": "boolean"
+          }
+        },
+        "title": "addressbook_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "addressbook_create",
+      "title": "Create an address book",
+      "description": "Create an empty local address book.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "addressbook_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "addressbook_delete",
+      "title": "Delete an address book",
+      "description": "Delete an address book together with all its contacts and mailing lists.\n\nIrreversible and usually not what the user meant — deleting one contact is\n`contact_delete`. Run with `dry_run_only=true` first to see the size of it.",
+      "inputSchema": {
+        "properties": {
+          "address_book_id": {
+            "title": "Address Book Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "address_book_id"
+        ],
+        "title": "addressbook_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mailinglist_list",
+      "title": "List mailing lists",
+      "description": "List address book mailing lists, with member counts.\n\nThese are Thunderbird's own distribution lists, not mailing lists you\nsubscribe to. `include_members` returns each roster in full.",
+      "inputSchema": {
+        "properties": {
+          "address_book_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Address Book Id"
+          },
+          "include_members": {
+            "default": false,
+            "title": "Include Members",
+            "type": "boolean"
+          }
+        },
+        "title": "mailinglist_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mailinglist_create",
+      "title": "Create a mailing list",
+      "description": "Create an empty mailing list in an address book.\n\n`nickname` is what the user types in a compose window to address the whole\nlist, so it is worth setting.",
+      "inputSchema": {
+        "properties": {
+          "address_book_id": {
+            "title": "Address Book Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nickname"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "address_book_id",
+          "name"
+        ],
+        "title": "mailinglist_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mailinglist_add_member",
+      "title": "Add someone to a mailing list",
+      "description": "Add an existing contact to a mailing list.\n\nIf the contact lives in a different address book it is copied into the list's\none; the result says so via `copiedToAddressBook`.",
+      "inputSchema": {
+        "properties": {
+          "mailing_list_id": {
+            "title": "Mailing List Id",
+            "type": "string"
+          },
+          "contact_id": {
+            "title": "Contact Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mailing_list_id",
+          "contact_id"
+        ],
+        "title": "mailinglist_add_memberArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "mailinglist_remove_member",
+      "title": "Remove someone from a mailing list",
+      "description": "Take a contact off a mailing list. The contact itself is left alone.",
+      "inputSchema": {
+        "properties": {
+          "mailing_list_id": {
+            "title": "Mailing List Id",
+            "type": "string"
+          },
+          "contact_id": {
+            "title": "Contact Id",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mailing_list_id",
+          "contact_id"
+        ],
+        "title": "mailinglist_remove_memberArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "calendar": [
+    {
+      "name": "calendar_list",
+      "title": "List calendars",
+      "description": "List the user's calendars, with ids, types and whether each is writable.\n\nEvery other tool here takes one of these ids. A calendar marked\n`readOnly` refuses writes; `disabled` ones are skipped when listing items.",
+      "inputSchema": {
+        "properties": {},
+        "title": "calendar_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "calendar_create",
+      "title": "Create a calendar",
+      "description": "Create a calendar and register it with Thunderbird.\n\n`storage` keeps events in the local profile and needs no `url`; `ics` and\n`caldav` need the file or collection URL. `color` is `#RRGGBB`.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "default": "storage",
+            "enum": [
+              "storage",
+              "memory",
+              "ics",
+              "caldav"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Color"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "calendar_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "calendar_update",
+      "title": "Change a calendar",
+      "description": "Rename or recolour a calendar, or toggle read-only and disabled.\n\nOnly the fields you pass are touched. Nothing here affects the events\ninside the calendar.",
+      "inputSchema": {
+        "properties": {
+          "calendar_id": {
+            "title": "Calendar Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Color"
+          },
+          "read_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Read Only"
+          },
+          "disabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Disabled"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "calendar_id"
+        ],
+        "title": "calendar_updateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "calendar_delete",
+      "title": "Delete a calendar",
+      "description": "Remove a calendar. Deletes its events and tasks with it.\n\n`unregister_only=true` is the reversible half: the calendar disappears\nfrom Thunderbird but its data is left where it is, ready to be added\nagain. Prefer it unless the user asked for the data to go too.",
+      "inputSchema": {
+        "properties": {
+          "calendar_id": {
+            "title": "Calendar Id",
+            "type": "string"
+          },
+          "unregister_only": {
+            "default": false,
+            "title": "Unregister Only",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "calendar_id"
+        ],
+        "title": "calendar_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "event_list",
+      "title": "List calendar events",
+      "description": "List events in a time window, soonest first.\n\nDefaults to the next 30 days across every enabled calendar; pass\n`from_date`/`to_date` (ISO-8601) for anything else, or `days` to widen the\ndefault window. `include_occurrences` expands recurring series into the\nindividual meetings that fall inside the window, which is what you want\nfor \"what is on next week\".",
+      "inputSchema": {
+        "properties": {
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "from_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "From Date"
+          },
+          "to_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "To Date"
+          },
+          "days": {
+            "default": 30,
+            "title": "Days",
+            "type": "integer"
+          },
+          "include_occurrences": {
+            "default": true,
+            "title": "Include Occurrences",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          }
+        },
+        "title": "event_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "event_get",
+      "title": "Read one event or task",
+      "description": "Read one event or task in full, including attendees and recurrence.\n\nSearches every calendar unless `calendar_id` narrows it. For a recurring\nseries this returns the series plus its next few start times; pass\n`occurrence_date` to read a single occurrence instead.",
+      "inputSchema": {
+        "properties": {
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "occurrence_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurrence Date"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          }
+        },
+        "required": [
+          "item_id"
+        ],
+        "title": "event_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "event_create",
+      "title": "Create an event",
+      "description": "Create an event. Omit `end` for a one-hour meeting.\n\n`start`/`end` are ISO-8601; a time with no offset is read as wall-clock\ntime in `timezone` (the calendar's default if unset). For `all_day=true`\npass plain dates — the end is exclusive per iCalendar, so omit it for a\nsingle day. `recurrence_rule` is an RRULE body such as\n`FREQ=WEEKLY;BYDAY=TU;COUNT=10`. Attendees are stored but no invitations\nare sent.",
+      "inputSchema": {
+        "properties": {
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "start": {
+            "title": "Start",
+            "type": "string"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End"
+          },
+          "all_day": {
+            "default": false,
+            "title": "All Day",
+            "type": "boolean"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration Minutes"
+          },
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Location"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Categories"
+          },
+          "attendees": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attendees"
+          },
+          "organizer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organizer"
+          },
+          "recurrence_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Recurrence Rule"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "TENTATIVE",
+                  "CONFIRMED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "privacy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "PUBLIC",
+                  "PRIVATE",
+                  "CONFIDENTIAL"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Privacy"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Priority"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "title",
+          "start"
+        ],
+        "title": "event_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "event_update",
+      "title": "Change an event",
+      "description": "Change an event. Only the fields you pass are touched.\n\nFor a recurring event this rewrites the **whole series**; pass\n`occurrence_date` (the start of the one you mean) to change a single\noccurrence and leave the rest alone. The result says which it did. Pass an\nempty string to clear `location`, `description` or `url`.",
+      "inputSchema": {
+        "properties": {
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "occurrence_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurrence Date"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End"
+          },
+          "all_day": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "All Day"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Location"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Categories"
+          },
+          "attendees": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attendees"
+          },
+          "organizer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organizer"
+          },
+          "recurrence_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Recurrence Rule"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "TENTATIVE",
+                  "CONFIRMED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "privacy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "PUBLIC",
+                  "PRIVATE",
+                  "CONFIDENTIAL"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Privacy"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Priority"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "item_id"
+        ],
+        "title": "event_updateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "event_delete",
+      "title": "Delete an event or task",
+      "description": "Delete an event or a task. Calendars have no trash, so this is final.\n\nFor a recurring item this deletes the **entire series**. Pass\n`occurrence_date` to cancel one occurrence and keep the rest; the result\nsays which it did. Read the item with `event_get` first if you are not\nsure it recurs.",
+      "inputSchema": {
+        "properties": {
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "occurrence_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurrence Date"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "item_id"
+        ],
+        "title": "event_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "task_list",
+      "title": "List tasks",
+      "description": "List tasks, soonest due first. Completed ones are hidden by default.\n\nUnlike `event_list` this is not windowed by default: a task with no due\ndate falls outside every range, and those are exactly the ones people\nforget. Pass `from_date`/`to_date` to narrow it.",
+      "inputSchema": {
+        "properties": {
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "include_completed": {
+            "default": false,
+            "title": "Include Completed",
+            "type": "boolean"
+          },
+          "from_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "From Date"
+          },
+          "to_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "To Date"
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          }
+        },
+        "title": "task_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "task_create",
+      "title": "Create a task",
+      "description": "Create a task. Everything but the title is optional.\n\n`start` is the entry date and `due` the deadline, both ISO-8601. A task\nwith neither still appears in Thunderbird's task list, which is where\nundated to-dos belong.",
+      "inputSchema": {
+        "properties": {
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "due": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Due"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start"
+          },
+          "all_day": {
+            "default": false,
+            "title": "All Day",
+            "type": "boolean"
+          },
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Location"
+          },
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Categories"
+          },
+          "percent_complete": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Percent Complete"
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completed"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "NEEDS-ACTION",
+                  "IN-PROCESS",
+                  "COMPLETED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Priority"
+          },
+          "recurrence_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Recurrence Rule"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "task_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "task_update",
+      "title": "Change a task",
+      "description": "Change a task, or tick it off with `completed=true`.\n\nOnly the fields you pass are touched. `completed=true` also stamps the\ncompletion time and sets progress to 100%. For a repeating task this\nrewrites the series unless `occurrence_date` names one instance.",
+      "inputSchema": {
+        "properties": {
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "calendar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calendar Id"
+          },
+          "occurrence_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurrence Date"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "due": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Due"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start"
+          },
+          "all_day": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "All Day"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Location"
+          },
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Categories"
+          },
+          "percent_complete": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Percent Complete"
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completed"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "NEEDS-ACTION",
+                  "IN-PROCESS",
+                  "COMPLETED",
+                  "CANCELLED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Priority"
+          },
+          "recurrence_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Recurrence Rule"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "item_id"
+        ],
+        "title": "task_updateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "filters": [
+    {
+      "name": "filter_list",
+      "title": "List message filters",
+      "description": "List filters in execution order, with their conditions and actions.\n\nOmit `account_key` for every account. `index` is the position in the list and\nis what the other `filter_*` tools take — it shifts when filters are added,\nremoved or reordered, so re-list before acting on a stale index.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Key"
+          }
+        },
+        "title": "filter_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "filter_get",
+      "title": "Get one filter",
+      "description": "Read one filter in full, by account and index.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "account_key",
+          "index"
+        ],
+        "title": "filter_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "filter_create",
+      "title": "Create a filter",
+      "description": "Create a filter. It is appended, so existing rules keep their order.\n\nConditions: `[{\"attribute\": \"from\", \"operator\": \"contains\", \"value\": \"bank\"}]`.\nActions: `[{\"type\": \"moveToFolder\", \"folderId\": \"account1://Bank\"}]`.\n`run_when` defaults to `[\"inbox\", \"manual\"]` — on new mail, and when filters\nare applied by hand. `match_all=false` makes the conditions OR together.\n\nFilters act on real mail automatically from now on, so check the conditions\ncarefully; `dry_run_only=true` shows what would be created.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "search_terms": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Search Terms",
+            "type": "array"
+          },
+          "actions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "run_when": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run When"
+          },
+          "match_all": {
+            "default": true,
+            "title": "Match All",
+            "type": "boolean"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Position"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "name",
+          "search_terms",
+          "actions"
+        ],
+        "title": "filter_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "filter_update",
+      "title": "Change a filter",
+      "description": "Change a filter in place. Only what you pass is touched.\n\n`search_terms` and `actions` each replace the whole list rather than merging —\na partial merge of a boolean condition set has no sensible meaning. Read the\ncurrent definition with `filter_get` first.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "search_terms": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search Terms"
+          },
+          "actions": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actions"
+          },
+          "run_when": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run When"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Enabled"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "index"
+        ],
+        "title": "filter_updateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "filter_set_enabled",
+      "title": "Enable or disable a filter",
+      "description": "Turn one filter on or off without changing its definition.\n\nSafer than deleting when you only want to stop a rule for now.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "index",
+          "enabled"
+        ],
+        "title": "filter_set_enabledArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "filter_reorder",
+      "title": "Reorder a filter",
+      "description": "Move a filter to a different position in the execution order.\n\n`to_index` is the position it should end up at. Order matters whenever a rule\nuses `stopExecution`, or when two rules would both move the same message.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "to_index": {
+            "title": "To Index",
+            "type": "integer"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "index",
+          "to_index"
+        ],
+        "title": "filter_reorderArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "filter_delete",
+      "title": "Delete a filter",
+      "description": "Delete a filter. Thunderbird keeps no history, so the rule is gone.\n\nThe returned `previous` block is the full definition — keep it if you might\nwant to recreate the rule. Consider `filter_set_enabled` instead.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "index"
+        ],
+        "title": "filter_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "filter_run",
+      "title": "Run filters now",
+      "description": "Apply filters to folders on demand, as \"Run Filters on Folder\" does.\n\nDefaults to every enabled filter on the account's Inbox. This really moves,\ntags and deletes mail according to the rules, so it is gated — and it is the\nright way to check a new filter against existing messages.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "folder_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Folder Ids"
+          },
+          "filter_indexes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Filter Indexes"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key"
+        ],
+        "title": "filter_runArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "name": "account_list",
+      "title": "List accounts",
+      "description": "List the mail accounts and how each one is configured.\n\nThe official API supplies names, types and identities; the privileged half\nadds host, port, security and check-for-mail settings. The `key` of each\naccount (`account1`) is what every other tool in this toolset takes. No\npassword is read.",
+      "inputSchema": {
+        "properties": {
+          "include_settings": {
+            "default": true,
+            "title": "Include Settings",
+            "type": "boolean"
+          }
+        },
+        "title": "account_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_get_server",
+      "title": "Get incoming server settings",
+      "description": "Read one account's incoming server settings.\n\nHost, port, connection security, authentication method and the\ncheck-for-new-mail settings. Passwords are never read; the login manager is\nout of reach of this bridge.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_key"
+        ],
+        "title": "account_get_serverArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_set_server",
+      "title": "Change an incoming server setting",
+      "description": "Change one incoming server setting. Getting the connection wrong stops mail.\n\n`setting` is one of: `hostname`, `port`, `username`, `socketType`,\n`authMethod`, `prettyName` (the account's display name), `doBiff`,\n`biffMinutes`, `downloadOnBiff`, `loginAtStartUp`,\n`limitOfflineMessageSize`, `maxMessageSize`, `emptyTrashOnExit`, and for IMAP\n`useIdle`, `maximumConnectionsNumber`, `forceSelect`, `cleanupInboxOnExit`.\n\n`socketType` takes `plain`, `starttls` or `tls`; `authMethod` takes `none`,\n`password-cleartext`, `password-encrypted`, `gssapi`, `ntlm` or `oauth2`. The\naccount type itself cannot be changed. Passwords are never written: after a\nhostname or username change Thunderbird will ask the user to sign in again.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "setting": {
+            "title": "Setting",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "setting",
+          "value"
+        ],
+        "title": "account_set_serverArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_get_junk",
+      "title": "Get junk mail settings",
+      "description": "Read one account's junk-mail handling: level, whitelist, move and purge rules.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_key"
+        ],
+        "title": "account_get_junkArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_set_junk",
+      "title": "Change a junk mail setting",
+      "description": "Change one junk-mail setting for an account.\n\n`setting` is one of: `level`, `moveOnSpam`, `moveTargetMode`,\n`actionTargetAccount`, `actionTargetFolder`, `purge`, `purgeInterval`,\n`useWhiteList`, `whiteListAbURI`, `manualMark`, `markAsReadOnSpam`.\nFolder settings take a folder URI, which `account_get_junk` reports.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "setting": {
+            "title": "Setting",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "setting",
+          "value"
+        ],
+        "title": "account_set_junkArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_get_folders",
+      "title": "Get copies and folders settings",
+      "description": "Read where an identity files sent mail, drafts, templates and archives.\n\nThese live on the identity, not the server, so an account with two identities\ncan file its mail in two places. Omit `identity_key` for the account's default\nidentity.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "identity_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Identity Key"
+          }
+        },
+        "required": [
+          "account_key"
+        ],
+        "title": "account_get_foldersArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_set_folders",
+      "title": "Change a copies and folders setting",
+      "description": "Change where an identity files sent mail, drafts, templates or archives.\n\n`setting` is one of: `fccFolder` (sent), `doFcc`, `draftFolder`,\n`stationeryFolder` (templates), `archiveFolder`, `archiveEnabled`,\n`archiveGranularity`, `archiveKeepFolderStructure`. Folder settings take a\nfolder URI as reported by `account_get_folders`, not a folder id.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "setting": {
+            "title": "Setting",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          },
+          "identity_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Identity Key"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "setting",
+          "value"
+        ],
+        "title": "account_set_foldersArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_get_sync",
+      "title": "Get synchronisation settings",
+      "description": "Read an account's offline and synchronisation settings.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_key"
+        ],
+        "title": "account_get_syncArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "account_set_sync",
+      "title": "Change a synchronisation setting",
+      "description": "Change one offline or synchronisation setting for an account.\n\n`setting` is one of: `offlineDownload`, `autoSyncOfflineStores`,\n`downloadBodiesOnGetNewMail`, `limitOfflineMessageSize`, `maxMessageSize`,\n`offlineSupportLevel`, `doBiff`, `biffMinutes`, `downloadOnBiff`, `useIdle`,\nand for POP3 `leaveMessagesOnServer`, `deleteMailLeftOnServer`,\n`numDaysToLeaveOnServer`, `headersOnly`.\n\nTurning offline storage on does not download anything by itself — use\n`folder_sync_offline` for that.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          },
+          "setting": {
+            "title": "Setting",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_key",
+          "setting",
+          "value"
+        ],
+        "title": "account_set_syncArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "identity_list",
+      "title": "List identities",
+      "description": "List the sending identities, across every account or just one.\n\nAn identity is a from-address with its own signature, outgoing server and\nfiling folders. Its `key` is what `identity_get` and `identity_set` take.",
+      "inputSchema": {
+        "properties": {
+          "account_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Account Key"
+          }
+        },
+        "title": "identity_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "identity_get",
+      "title": "Get an identity",
+      "description": "Read one identity in full: addresses, signature, outgoing server, filing folders.\n\nCredentials are not part of this: the outgoing server is reported by key, and\nits password stays in the login manager.",
+      "inputSchema": {
+        "properties": {
+          "identity_key": {
+            "title": "Identity Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "identity_key"
+        ],
+        "title": "identity_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "identity_set",
+      "title": "Update an identity",
+      "description": "Change an identity's addresses and composition defaults.\n\nOnly the fields you pass are touched; pass an empty string to clear one.\n`email` is the from-address the recipient sees, so changing it can break\nreplies and any filter that matches on it. `smtp_server_key` comes from\n`smtp_list`. Signatures go through `identity_set_signature`, and the sent or\ndrafts folders through `account_set_folders`. Passwords are never written.",
+      "inputSchema": {
+        "properties": {
+          "identity_key": {
+            "title": "Identity Key",
+            "type": "string"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Full Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Email"
+          },
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reply To"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Organization"
+          },
+          "compose_html": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Compose Html"
+          },
+          "attach_vcard": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attach Vcard"
+          },
+          "smtp_server_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Smtp Server Key"
+          },
+          "do_bcc": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Do Bcc"
+          },
+          "bcc_list": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bcc List"
+          },
+          "catch_all": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Catch All"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "identity_key"
+        ],
+        "title": "identity_setArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "identity_set_signature",
+      "title": "Set an identity's signature",
+      "description": "Replace an identity's signature text, or point it at a file.\n\nPass `signature` for inline text (set `is_html` when it contains markup), or\n`file_path` for a signature file on this machine — the two are mutually\nexclusive in Thunderbird. `attach=false` keeps the text but stops appending\nit; `below_quote` controls whether the signature sits under a quoted reply.",
+      "inputSchema": {
+        "properties": {
+          "identity_key": {
+            "title": "Identity Key",
+            "type": "string"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Signature"
+          },
+          "is_html": {
+            "default": false,
+            "title": "Is Html",
+            "type": "boolean"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "File Path"
+          },
+          "attach": {
+            "default": true,
+            "title": "Attach",
+            "type": "boolean"
+          },
+          "below_quote": {
+            "default": true,
+            "title": "Below Quote",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "identity_key"
+        ],
+        "title": "identity_set_signatureArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "smtp_list",
+      "title": "List outgoing servers",
+      "description": "List the SMTP servers, and which one is the default.\n\nEach server's `key` is what the other `smtp_*` tools take. Passwords are\nnever read — only whether Thunderbird has one stored.",
+      "inputSchema": {
+        "properties": {},
+        "title": "smtp_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "smtp_create",
+      "title": "Add an outgoing server",
+      "description": "Add an SMTP server. Nothing sends through it until an identity points at it.\n\nOmit `port` to take the default for the chosen security (587 for STARTTLS,\n465 for TLS). No password is stored: Thunderbird prompts the user the first\ntime the server is used, and this bridge never writes to the login manager.",
+      "inputSchema": {
+        "properties": {
+          "hostname": {
+            "title": "Hostname",
+            "type": "string"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Port"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Username"
+          },
+          "socket_type": {
+            "default": "starttls",
+            "enum": [
+              "plain",
+              "starttls",
+              "tls"
+            ],
+            "title": "Socket Type",
+            "type": "string"
+          },
+          "auth_method": {
+            "default": "password-cleartext",
+            "enum": [
+              "none",
+              "password-cleartext",
+              "password-encrypted",
+              "gssapi",
+              "ntlm",
+              "oauth2"
+            ],
+            "title": "Auth Method",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "make_default": {
+            "default": false,
+            "title": "Make Default",
+            "type": "boolean"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hostname"
+        ],
+        "title": "smtp_createArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "smtp_update",
+      "title": "Update an outgoing server",
+      "description": "Change an existing SMTP server. Only the fields you pass are touched.\n\nGet `server_key` from `smtp_list`. Changing the hostname or username usually\ninvalidates the stored password, and the user will be asked for it on the next\nsend — this tool neither reads nor writes it.",
+      "inputSchema": {
+        "properties": {
+          "server_key": {
+            "title": "Server Key",
+            "type": "string"
+          },
+          "hostname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hostname"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Port"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Username"
+          },
+          "socket_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "plain",
+                  "starttls",
+                  "tls"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Socket Type"
+          },
+          "auth_method": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "password-cleartext",
+                  "password-encrypted",
+                  "gssapi",
+                  "ntlm",
+                  "oauth2"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Auth Method"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "server_key"
+        ],
+        "title": "smtp_updateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "smtp_delete",
+      "title": "Delete an outgoing server",
+      "description": "Remove an SMTP server. Identities using it will be left unable to send.\n\nThunderbird has no undo for this, and the settings are not recoverable from\nthe UI, so the reply repeats them — check `smtp_list` for identities pointing\nat this key first.",
+      "inputSchema": {
+        "properties": {
+          "server_key": {
+            "title": "Server Key",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "server_key"
+        ],
+        "title": "smtp_deleteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "smtp_set_default",
+      "title": "Set the default outgoing server",
+      "description": "Make one SMTP server the default for identities that have none of their own.",
+      "inputSchema": {
+        "properties": {
+          "server_key": {
+            "title": "Server Key",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "server_key"
+        ],
+        "title": "smtp_set_defaultArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "settings": [
+    {
+      "name": "pref_get",
+      "title": "Read a preference",
+      "description": "Read one Thunderbird preference.\n\nReports the value, its type, whether the user has changed it from the default,\nand whether an enterprise policy has locked it. `writable` says whether this\nserver would let you change it. Use `settings_describe` to find the name.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "pref_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "pref_get_many",
+      "title": "Read several preferences",
+      "description": "Read up to 100 preferences in one round trip.\n\nPreferences that do not exist come back with `exists: false` rather than\nfailing the whole call, and are listed again under `missing`.",
+      "inputSchema": {
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "names"
+        ],
+        "title": "pref_get_manyArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "pref_list",
+      "title": "List preferences by prefix",
+      "description": "List preferences under a branch, e.g. `prefix=\"mail.biff.\"`.\n\nA bare prefix matches over five thousand preferences on a normal profile, so\npass a branch and keep `limit` modest. `only_user_set=true` narrows it to what\ndiffers from the shipped defaults.",
+      "inputSchema": {
+        "properties": {
+          "prefix": {
+            "default": "",
+            "title": "Prefix",
+            "type": "string"
+          },
+          "only_user_set": {
+            "default": false,
+            "title": "Only User Set",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 200,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "pref_listArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "pref_user_set",
+      "title": "List changed preferences",
+      "description": "Everything the user has changed from the shipped defaults.\n\nThe honest answer to \"what is my Thunderbird configured like\": a normal profile\nhas a few hundred of these, dominated by per-account `mail.server.*` and\n`mail.identity.*` entries. Anything that looks like a credential is redacted\nbefore it leaves Thunderbird.",
+      "inputSchema": {
+        "properties": {
+          "prefix": {
+            "default": "",
+            "title": "Prefix",
+            "type": "string"
+          }
+        },
+        "title": "pref_user_setArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "settings_describe",
+      "title": "Describe common settings",
+      "description": "Map a human request onto the preference that controls it.\n\nConsult this instead of guessing a preference name. It costs no round trip to\nThunderbird, so it is cheap to call first. Value meanings are for Thunderbird\n153; current values are not included because they are per-profile — read one\nwith `pref_get`. `writable` reflects this server's allowlist, not Thunderbird's\nown locking.",
+      "inputSchema": {
+        "properties": {
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Area"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search"
+          }
+        },
+        "title": "settings_describeArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "pref_set",
+      "title": "Change a preference",
+      "description": "Change one Thunderbird preference.\n\n`type` must match the preference's existing type — pass `\"int\"` for a number\neven when it reads like a boolean (`calendar.alarms.onforevents` is the classic\ntrap), and the call is refused with the right type if you get it wrong. Use\n`settings_describe` for the name and the allowed values, and `dry_run_only=true`\nto see the current value alongside what you propose.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "bool",
+              "int",
+              "string"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Value"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "value"
+        ],
+        "title": "pref_setArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "pref_reset",
+      "title": "Reset a preference",
+      "description": "Clear a user-set preference so the shipped default applies again.\n\nThe cleanest undo for a `pref_set` the user did not like — it removes the entry\nfrom `prefs.js` rather than writing the old value back. A preference already at\nits default is reported as unchanged instead of failing.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "pref_resetArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "junk_get",
+      "title": "Get junk filter settings",
+      "description": "Read the global junk (bayesian) filter settings.\n\n`userHasClassified` is the one to check first: an untrained filter scores\nnothing usefully, however the rest is configured. Per-account junk behaviour —\nwhich folder spam moves to, whitelists, purge age — lives in `account_get_junk`.",
+      "inputSchema": {
+        "properties": {},
+        "title": "junk_getArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "junk_set",
+      "title": "Change junk filter settings",
+      "description": "Change the global junk filter settings. Only the fields you pass are touched.\n\n`manual_mark_mode=\"delete\"` makes marking a message as junk delete it outright,\nwhich is a real data-loss setting — prefer `\"move\"` unless the user asks for\ndeletion by name.",
+      "inputSchema": {
+        "properties": {
+          "manual_mark": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Manual Mark"
+          },
+          "manual_mark_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "move",
+                  "delete"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Manual Mark Mode"
+          },
+          "mark_as_read_on_spam": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mark As Read On Spam"
+          },
+          "logging_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Logging Enabled"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "title": "junk_setArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "junk_train",
+      "title": "Train the junk filter",
+      "description": "Teach the junk filter that these messages are junk, or are not.\n\nIds are RFC 5322 Message-ID header values (`headerMessageId` from `mail_get`),\nnot the integer ids from `mail_search`: those are only valid while Thunderbird\nstays open, and training data outlives the session. Training is cumulative and\nbiased corpora are hard to undo, so train on messages the user has actually\njudged rather than on a whole search result.",
+      "inputSchema": {
+        "properties": {
+          "header_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Header Message Ids",
+            "type": "array"
+          },
+          "classification": {
+            "enum": [
+              "junk",
+              "good"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "dry_run_only": {
+            "default": false,
+            "title": "Dry Run Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "header_message_ids",
+          "classification"
+        ],
+        "title": "junk_trainArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "openpgp_list_keys",
+      "title": "List OpenPGP keys",
+      "description": "List the OpenPGP keys in Thunderbird's keyring.\n\nMetadata only — fingerprints, user ids, validity, expiry, and whether a secret\nkey is present. Private key material is never exported through this server, and\nno tool here can export it; a user who wants a backup should use Thunderbird's\nown End-to-End Encryption settings. `search` matches an email address, key id or\nfingerprint; `only_secret=true` narrows to keys this user can sign with.",
+      "inputSchema": {
+        "properties": {
+          "search": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search"
+          },
+          "only_secret": {
+            "default": false,
+            "title": "Only Secret",
+            "type": "boolean"
+          }
+        },
+        "title": "openpgp_list_keysArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "admin": [
+    {
+      "name": "tb_status",
+      "title": "Thunderbird connection status",
+      "description": "Whether Thunderbird is attached, and which halves of the add-on loaded.\n\nAnswered by the local daemon. Just after the daemon starts, if Thunderbird is\nrunning, wait up to about 20 seconds for its add-on to attach. If Thunderbird\nis closed, answer at once with `state: \"not-running\"`. The `state` field tells\ncallers whether to ask the user to start Thunderbird or call `tb_wait`.",
+      "inputSchema": {
+        "properties": {},
+        "title": "tb_statusArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "tb_wait",
+      "title": "Wait for Thunderbird",
+      "description": "Block until Thunderbird attaches to the bridge, then report status.\n\nUse it after `tb_restart`, or after asking the user to start Thunderbird.\nFails with a message naming what is missing if nothing attaches in time.",
+      "inputSchema": {
+        "properties": {
+          "timeout_seconds": {
+            "default": 30,
+            "title": "Timeout Seconds",
+            "type": "integer"
+          }
+        },
+        "title": "tb_waitArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "tb_events",
+      "title": "Recent Thunderbird events",
+      "description": "Read buffered Thunderbird notifications: new mail, folder and account changes.\n\nPoll with `since=latestSeq` from the previous call to see only what is new.\nThe daemon keeps a few hundred events, so a long gap between polls can drop\nsome — `latestSeq` jumping by more than you received is how you tell.",
+      "inputSchema": {
+        "properties": {
+          "since": {
+            "default": 0,
+            "title": "Since",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 50,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "tb_eventsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "tb_diagnostics",
+      "title": "Thunderbird diagnostics",
+      "description": "One report: versions, profile, which capabilities loaded, accounts, indexing.\n\nThe first thing to fetch when anything behaves oddly. It includes whether this\nbuild permits unsigned add-ons and experiment APIs, which is what explains a\nhalf-installed bridge, and the message store type per account.",
+      "inputSchema": {
+        "properties": {},
+        "title": "tb_diagnosticsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "tb_console",
+      "title": "Thunderbird error console",
+      "description": "Recent lines from Thunderbird's error console, newest last.\n\nNarrow it with `contains` — `tbmcp` shows this bridge's own complaints, and an\nadd-on id or a source filename shows someone else's. Anything shaped like a\npassword or token is redacted inside Thunderbird before it is sent.\n\nLines the bridge writes with `console.*` (`source: \"console\"`) are included\nalongside the error console's own entries, merged by time.",
+      "inputSchema": {
+        "properties": {
+          "contains": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contains"
+          },
+          "limit": {
+            "default": 100,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "tb_consoleArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "tb_addons",
+      "title": "Installed add-ons",
+      "description": "List installed add-ons with their enabled and signature state.\n\n`isBridge` marks this server's own add-on. A `signedState` of 0 is expected\nfor it: the bridge is installed unsigned, which this Thunderbird permits.",
+      "inputSchema": {
+        "properties": {
+          "kind": {
+            "default": "all",
+            "enum": [
+              "all",
+              "extension",
+              "theme",
+              "dictionary",
+              "locale"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "title": "tb_addonsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "tb_restart",
+      "title": "Restart Thunderbird",
+      "description": "Restart Thunderbird. Every call in flight fails, including other clients'.\n\nThe bridge connection drops, so this returns before the restart happens and\nthe result says nothing about whether it succeeded — wait with `tb_wait`\nafterwards. Unsent compose windows and unsaved drafts are lost, so ask the\nuser before you do it; a stuck sync usually does not need it.",
+      "inputSchema": {
+        "properties": {
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "title": "tb_restartArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "title": null,
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

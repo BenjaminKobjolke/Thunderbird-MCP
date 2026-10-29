@@ -8,7 +8,7 @@ from a broken install.
 
 from __future__ import annotations
 
-from tbmcp.daemon import error_payload
+from tbmcp.addon_session import error_payload
 from tbmcp.errors import (
     BlockedError,
     NotConnectedError,

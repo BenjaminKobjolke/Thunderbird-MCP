@@ -1,4 +1,4 @@
-"""The pure parts of `tools/smoke_search.py`.
+"""The pure parts of `tools/smoke_search_checks.py`.
 
 The script itself needs a live Thunderbird, but everything it decides before it
 asks a question — which folder is worth searching, which word to search for, what
@@ -18,9 +18,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 def _load_script():
-    """Import `tools/smoke_search.py`, which is a script and not a package module."""
+    """Import the checks module by path; the tools directory is not a package."""
     spec = importlib.util.spec_from_file_location(
-        "smoke_search", ROOT / "tools" / "smoke_search.py"
+        "smoke_search_checks", ROOT / "tools" / "smoke_search_checks.py"
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

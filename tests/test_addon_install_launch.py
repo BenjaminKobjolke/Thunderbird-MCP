@@ -23,7 +23,7 @@ DEADLINE_SECONDS = 10
 
 HELPER = '''
 import sys
-from tbmcp.addon_install import _launch
+from tbmcp.thunderbird_process import _launch
 
 
 class Exe:
