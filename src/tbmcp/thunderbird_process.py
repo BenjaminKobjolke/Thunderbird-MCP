@@ -11,6 +11,8 @@ import sys
 import time
 from typing import TYPE_CHECKING
 
+from .errors import TransportError
+
 if TYPE_CHECKING:
     from .profile import ThunderbirdProfile
 
@@ -213,6 +215,22 @@ def _launch(exe: pathlib.Path, extra_args: list[str], profile: ThunderbirdProfil
     else:
         kwargs["start_new_session"] = True
     subprocess.Popen(argv, **kwargs)
+
+
+def start_thunderbird() -> None:
+    """Start the configured Thunderbird executable as a detached process."""
+    executable = find_thunderbird()
+    if executable is None:
+        raise TransportError(
+            "Thunderbird executable was not found. Configure TBMCP_THUNDERBIRD or install Thunderbird.",
+            code="THUNDERBIRD_NOT_FOUND",
+        )
+    try:
+        _launch(executable, [], None)
+    except OSError as exc:
+        raise TransportError(
+            f"could not start Thunderbird: {exc}", code="THUNDERBIRD_START_FAILED"
+        ) from exc
 
 
 def _stop(timeout: float = 60.0) -> bool:

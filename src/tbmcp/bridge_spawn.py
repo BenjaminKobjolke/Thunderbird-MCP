@@ -10,7 +10,7 @@ import sys
 import time
 from typing import TYPE_CHECKING, Any
 
-from . import ipc
+from . import ipc, thunderbird_process
 from .errors import NotConnectedError, TransportError
 
 if TYPE_CHECKING:
@@ -78,6 +78,9 @@ async def wait_for_attachment(bridge: Bridge) -> None:
     async with bridge._attach_lock:
         if bridge._attached:
             return
+        if not thunderbird_process.is_running():
+            log.info("Thunderbird is not running; starting the configured executable")
+            thunderbird_process.start_thunderbird()
         try:
             await bridge.call(
                 "daemon.waitForThunderbird",
