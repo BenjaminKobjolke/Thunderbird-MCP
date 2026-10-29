@@ -535,7 +535,7 @@ def _step_binaries(options: Options, state: dict, run: Runner) -> tuple[str, str
 def _step_launcher(options: Options, state: dict, run: Runner) -> tuple[str, str]:
     """Defaulting straight to `python -m tbmcp` is an intentional deviation from the
     design's "probe the console script, fall back to `-m tbmcp`" (that probe already
-    lives in `clients._console_script`, which every client writer goes through) —
+    lives in `client_launcher._console_script`, which every client writer goes through) —
     `-m tbmcp` always works once the package is installed, and the README documents
     the simplification. But the step still has to earn its `ok`: it runs `-m tbmcp
     --help` before claiming one, instead of naming an interpreter untested (or, under
@@ -738,7 +738,7 @@ def _remedy(step_name: str, detail: str, options: Options, state: dict) -> str:
 def _rerun_without_dry_run(options: Options) -> str:
     """What a `--dry-run` that reached the end should actually be run as, to make
     what it described real. Mirrors the flags `tbmcp bootstrap` forwards to this
-    module (`cli.cmd_bootstrap`), minus the two that only affect *how* this reports."""
+    module (`cli_commands.cmd_bootstrap`), minus the two that only affect *how* this reports."""
     parts = ["python bootstrap.py"]
     if options.python:
         parts.append(f'--python "{options.python}"')

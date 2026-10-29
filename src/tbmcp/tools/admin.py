@@ -15,9 +15,9 @@ import time
 from pathlib import Path
 from typing import Any, Literal
 
-from .. import addon_install, ipc
+from .. import ipc, thunderbird_process
 from ..addon_build import build_check
-from ..bridge import ATTACH_WAIT_SECONDS
+from ..bridge_spawn import ATTACH_WAIT_SECONDS
 from ..errors import NotConnectedError, TbmcpError
 from ..handshake import describe_handshake
 from ..profile import describe_profile, profile_mismatch
@@ -65,7 +65,7 @@ def register(reg: Registrar) -> None:
         running = True
         waited = 0.0
         if not result.get("connected"):
-            running = await asyncio.to_thread(addon_install.is_running)
+            running = await asyncio.to_thread(thunderbird_process.is_running)
             uptime = (result.get("daemon") or {}).get("uptimeSeconds", ATTACH_WAIT_SECONDS)
             if running and uptime < ATTACH_WAIT_SECONDS:
                 remaining = max(1.0, ATTACH_WAIT_SECONDS - uptime)

@@ -21,7 +21,7 @@ import re
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-from ..bridge import shared_bridge
+from ..bridge_spawn import shared_bridge
 from ..errors import UsageError
 from ..policy import allows, grants
 from ..safety import current_settings

@@ -14,7 +14,8 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 from . import action_log, safety
-from .bridge import Bridge, set_shared_bridge
+from .bridge import Bridge
+from .bridge_spawn import set_shared_bridge
 from .config import ALL_TOOLSETS, Settings
 from .errors import TbmcpError
 
