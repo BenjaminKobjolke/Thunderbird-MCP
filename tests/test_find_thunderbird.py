@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from tbmcp import thunderbird_process
+from tbmcp.errors import TransportError
 
 REAL_SAVED_USER_VARIABLE = thunderbird_process.saved_user_variable
 
@@ -98,3 +99,42 @@ def test_saved_executable_is_used_only_when_running_one_is_missing(monkeypatch, 
     for key in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"):
         monkeypatch.setenv(key, str(tmp_path / key))
     assert thunderbird_process.find_thunderbird() is None
+
+
+def test_start_uses_configured_executable_and_detached_launcher(monkeypatch, tmp_path):
+    exe = tmp_path / "configured-thunderbird.exe"
+    calls = []
+    monkeypatch.setattr(thunderbird_process, "find_thunderbird", lambda: exe)
+    monkeypatch.setattr(
+        thunderbird_process,
+        "_launch",
+        lambda executable, args, profile: calls.append((executable, args, profile)),
+    )
+
+    thunderbird_process.start_thunderbird()
+
+    assert calls == [(exe, [], None)]
+
+
+def test_start_reports_missing_executable(monkeypatch):
+    monkeypatch.setattr(thunderbird_process, "find_thunderbird", lambda: None)
+
+    with pytest.raises(TransportError, match="Thunderbird executable") as exc:
+        thunderbird_process.start_thunderbird()
+
+    assert exc.value.code == "THUNDERBIRD_NOT_FOUND"
+
+
+def test_start_reports_launch_failure(monkeypatch, tmp_path):
+    exe = tmp_path / "thunderbird.exe"
+    monkeypatch.setattr(thunderbird_process, "find_thunderbird", lambda: exe)
+
+    def fail_to_launch(*_args):
+        raise OSError("access denied")
+
+    monkeypatch.setattr(thunderbird_process, "_launch", fail_to_launch)
+
+    with pytest.raises(TransportError, match="could not start Thunderbird") as exc:
+        thunderbird_process.start_thunderbird()
+
+    assert exc.value.code == "THUNDERBIRD_START_FAILED"
