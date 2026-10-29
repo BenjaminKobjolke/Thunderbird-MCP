@@ -5,6 +5,15 @@
     "enabled": true,
     "warning": 300,
     "error": 500,
+    "exceptions": [
+      {
+        "file": "src/tbmcp/bootstrap.py",
+        "warning": 900,
+        "error": 1000,
+        "reason": "The bootstrap must remain a single stdlib-only file so it can run in isolated mode before the package is installed.",
+        "checked": "2026-10-29"
+      }
+    ],
     "exclude_patterns": [
       "__pycache__/**",
       "*.pyc",
