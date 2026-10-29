@@ -9,10 +9,15 @@
     ".venv\\Scripts\\python.exe -m ruff format --check .",
     ".venv\\Scripts\\python.exe tools/check_consistency.py",
     ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all",
-    "tools\\analyze_changed_and_new_files.bat",
-    "tools\\analyze_code.bat"
+    "tools\\analyze_changed_and_new_files.bat"
   ],
   "analysis_command_kinds": {
+    ".venv\\Scripts\\python.exe -m pytest -q": "test",
+    "node -e \"const fs=require('node:fs'); process.exit(fs.readdirSync('tests/js').some(name=>name.endsWith('.test.mjs'))?0:1)\" && node --test \"tests/js/*.test.mjs\"": "test",
+    ".venv\\Scripts\\python.exe -m ruff check .": "test",
+    ".venv\\Scripts\\python.exe -m ruff format --check .": "test",
+    ".venv\\Scripts\\python.exe tools/check_consistency.py": "test",
+    ".venv\\Scripts\\python.exe -m tbmcp tools --toolsets all": "test",
     "tools\\analyze_changed_and_new_files.bat": "code_quality"
   },
   "command_check_scripts": [
