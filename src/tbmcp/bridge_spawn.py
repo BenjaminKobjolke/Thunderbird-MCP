@@ -11,7 +11,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from . import ipc, thunderbird_process
-from .errors import NotConnectedError, TransportError
+from .errors import TransportError
 
 if TYPE_CHECKING:
     from .bridge import Bridge
@@ -67,34 +67,28 @@ async def spawn_daemon(profile_hint: str | None) -> None:
     )
 
 
-async def wait_for_attachment(bridge: Bridge) -> None:
-    """Block until Thunderbird is attached, at most once per connection.
-
-    Cleared again whenever a call comes back "not connected", so a Thunderbird
-    that restarts mid-session is waited for afresh rather than failing every call.
-    """
+async def wait_for_attachment(bridge: Bridge) -> Any:
+    """Start Thunderbird if needed, then require a successful add-on handshake."""
     if bridge._attached:
-        return
+        return {"connected": True}
     async with bridge._attach_lock:
         if bridge._attached:
-            return
+            return {"connected": True}
         if not thunderbird_process.is_running():
             log.info("Thunderbird is not running; starting the configured executable")
-            thunderbird_process.start_thunderbird()
-        try:
-            await bridge.call(
-                "daemon.waitForThunderbird",
-                {"timeout": ATTACH_WAIT_SECONDS},
-                timeout=ATTACH_WAIT_SECONDS + 5.0,
-                _retry=False,
-            )
-        except NotConnectedError:
-            # Do not raise from here. The caller's own request will fail with the
-            # same message, and doing it there keeps one wait from turning into two
-            # for a single tool call.
-            log.info("Thunderbird has not attached after %.0fs", ATTACH_WAIT_SECONDS)
-            return
+            info = ipc.DaemonInfo.load()
+            profile_hint = (info.profile if info and info.profile else None) or bridge.profile_hint
+            from .profile import find_profile
+
+            thunderbird_process.start_thunderbird(find_profile(profile_hint))
+        result = await bridge.call(
+            "daemon.waitForThunderbird",
+            {"timeout": ATTACH_WAIT_SECONDS},
+            timeout=ATTACH_WAIT_SECONDS + 5.0,
+            _retry=False,
+        )
         bridge._attached = True
+        return result
 
 
 _shared: Bridge | None = None

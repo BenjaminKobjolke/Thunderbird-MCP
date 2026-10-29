@@ -217,8 +217,8 @@ def _launch(exe: pathlib.Path, extra_args: list[str], profile: ThunderbirdProfil
     subprocess.Popen(argv, **kwargs)
 
 
-def start_thunderbird() -> None:
-    """Start the configured Thunderbird executable as a detached process."""
+def start_thunderbird(profile: ThunderbirdProfile | None = None) -> None:
+    """Start the configured Thunderbird executable with its selected profile."""
     executable = find_thunderbird()
     if executable is None:
         raise TransportError(
@@ -226,7 +226,7 @@ def start_thunderbird() -> None:
             code="THUNDERBIRD_NOT_FOUND",
         )
     try:
-        _launch(executable, [], None)
+        _launch(executable, [], profile)
     except OSError as exc:
         raise TransportError(
             f"could not start Thunderbird: {exc}", code="THUNDERBIRD_START_FAILED"

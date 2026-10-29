@@ -68,10 +68,21 @@ def _settings_from_args(args: argparse.Namespace) -> Settings:
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
+    from . import bridge_spawn
     from .server import build_server
 
     settings = _settings_from_args(args)
     mcp = build_server(settings)
+
+    bridge = bridge_spawn.shared_bridge()
+
+    async def preflight() -> None:
+        try:
+            await bridge.ensure_ready()
+        finally:
+            await bridge.close()
+
+    asyncio.run(preflight())
     if args.http:
         mcp.run(
             transport="streamable-http",

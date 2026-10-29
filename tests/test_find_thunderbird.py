@@ -116,6 +116,29 @@ def test_start_uses_configured_executable_and_detached_launcher(monkeypatch, tmp
     assert calls == [(exe, [], None)]
 
 
+def test_start_uses_selected_profile(monkeypatch, tmp_path):
+    from tbmcp.profile import ThunderbirdProfile
+
+    exe = tmp_path / "configured-thunderbird.exe"
+    profile = ThunderbirdProfile(
+        path=tmp_path / "portable-profile",
+        name="portable",
+        is_default=False,
+        root=tmp_path,
+    )
+    calls = []
+    monkeypatch.setattr(thunderbird_process, "find_thunderbird", lambda: exe)
+    monkeypatch.setattr(
+        thunderbird_process,
+        "_launch",
+        lambda executable, args, selected: calls.append((executable, args, selected)),
+    )
+
+    thunderbird_process.start_thunderbird(profile)
+
+    assert calls == [(exe, [], profile)]
+
+
 def test_start_reports_missing_executable(monkeypatch):
     monkeypatch.setattr(thunderbird_process, "find_thunderbird", lambda: None)
 

@@ -255,6 +255,16 @@ class Bridge:
     async def _wait_for_attachment(self) -> None:
         await bridge_spawn.wait_for_attachment(self)
 
+    async def ensure_ready(self) -> dict[str, Any]:
+        """Connect to the daemon and require Thunderbird's add-on handshake."""
+        await self._ensure()
+        result = await bridge_spawn.wait_for_attachment(self)
+        if not isinstance(result, dict):
+            raise TransportError(
+                "Thunderbird reported an invalid attachment status", code="INVALID_STATUS"
+            )
+        return result
+
     async def status(self) -> dict[str, Any]:
         return await self.call("daemon.status", timeout=10.0)
 
