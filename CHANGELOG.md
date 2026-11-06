@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- `tbmcp serve` answers the MCP handshake at once and starts Thunderbird in the background; mail tools wait up to 45 s for a cold start instead of the server quitting after 20 s.
 - `mail_draft_save` and `mail_send` no longer write `null` as the body when
   the body is missing or empty.
 - `install-addon`, `refresh` and `tools/tb_console.py` ask every Thunderbird window to

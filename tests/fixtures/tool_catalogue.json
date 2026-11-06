@@ -6756,7 +6756,7 @@
     {
       "name": "tb_status",
       "title": "Thunderbird connection status",
-      "description": "Whether Thunderbird is attached, and which halves of the add-on loaded.\n\nAnswered by the local daemon. Just after the daemon starts, if Thunderbird is\nrunning, wait up to about 20 seconds for its add-on to attach. If Thunderbird\nis closed, answer at once with `state: \"not-running\"`. The `state` field tells\ncallers whether to ask the user to start Thunderbird or call `tb_wait`.",
+      "description": "Whether Thunderbird is attached, and which halves of the add-on loaded.\n\nAnswered by the local daemon. Just after the daemon starts, if Thunderbird is\nrunning, wait up to about 45 seconds for its add-on to attach. If Thunderbird\nis closed, answer at once with `state: \"not-running\"`. The `state` field tells\ncallers whether to ask the user to start Thunderbird or call `tb_wait`.",
       "inputSchema": {
         "properties": {},
         "title": "tb_statusArguments",

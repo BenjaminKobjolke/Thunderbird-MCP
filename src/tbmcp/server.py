@@ -152,7 +152,12 @@ class Registrar:
         return decorate
 
 
-def build_server(settings: Settings, *, bridge: Bridge | None = None) -> MCPServer:
+def build_server(
+    settings: Settings,
+    *,
+    bridge: Bridge | None = None,
+    lifespan: Callable[..., Any] | None = None,
+) -> MCPServer:
     """Create the server and register the selected toolsets, in a stable order."""
     safety.set_settings(settings)
     if bridge is not None:
@@ -166,12 +171,17 @@ def build_server(settings: Settings, *, bridge: Bridge | None = None) -> MCPServ
             )
         )
 
+    server_options: dict[str, Any] = {}
+    if lifespan is not None:
+        server_options["lifespan"] = lifespan
+
     mcp = MCPServer(
         name="thunderbird",
         title="Thunderbird",
         version=_version(),
         instructions=INSTRUCTIONS,
         warn_on_duplicate_tools=True,
+        **server_options,
     )
     registrar = Registrar(mcp, settings)
 

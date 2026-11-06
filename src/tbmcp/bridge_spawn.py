@@ -8,17 +8,19 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING, Any
 
 from . import ipc, thunderbird_process
-from .errors import TransportError
+from .errors import TbmcpError, TransportError
 
 if TYPE_CHECKING:
     from .bridge import Bridge
 
 log = logging.getLogger("tbmcp.bridge")
 SPAWN_WAIT_SECONDS = 12.0
-ATTACH_WAIT_SECONDS = 20.0
+ATTACH_WAIT_SECONDS = 45.0
 
 _DAEMON_LOCAL = frozenset(
     {"daemon.status", "daemon.events", "daemon.waitForThunderbird", "daemon.shutdown"}
@@ -89,6 +91,25 @@ async def wait_for_attachment(bridge: Bridge) -> Any:
         )
         bridge._attached = True
         return result
+
+
+async def _warm_up(bridge: Bridge) -> None:
+    try:
+        await bridge.ensure_ready()
+    except (TbmcpError, OSError) as exc:
+        log.warning("Thunderbird warm-up failed: %s; the first mail tool will retry", exc)
+
+
+@asynccontextmanager
+async def warm_up_lifespan(_server: Any) -> AsyncIterator[dict[str, Any]]:
+    """Start Thunderbird in the background so the MCP handshake never waits for it."""
+    task = asyncio.create_task(_warm_up(shared_bridge()))
+    try:
+        yield {}
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 _shared: Bridge | None = None

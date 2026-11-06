@@ -57,7 +57,7 @@ def register(reg: Registrar) -> None:
         """Whether Thunderbird is attached, and which halves of the add-on loaded.
 
         Answered by the local daemon. Just after the daemon starts, if Thunderbird is
-        running, wait up to about 20 seconds for its add-on to attach. If Thunderbird
+        running, wait up to about 45 seconds for its add-on to attach. If Thunderbird
         is closed, answer at once with `state: "not-running"`. The `state` field tells
         callers whether to ask the user to start Thunderbird or call `tb_wait`.
         """
