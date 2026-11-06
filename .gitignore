@@ -26,6 +26,8 @@ probe/*.log
 .superpowers/
 
 # Claude Code local state and root plan files
+# MCP server config contains machine-specific paths
+/.mcp.json
 .claude/
 coding-rules.json
 /PLAN_*.md
