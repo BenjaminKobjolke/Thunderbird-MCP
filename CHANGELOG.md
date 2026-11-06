@@ -18,6 +18,8 @@
 
 ### Fixed
 
+- Closing Thunderbird for an add-on install or restart now allows extra time for its exit work;
+  leftover windowless background tasks no longer count as a running Thunderbird and delay a fresh session.
 - `tbmcp serve` answers the MCP handshake at once and starts Thunderbird in the background; mail tools wait up to 45 s for a cold start instead of the server quitting after 20 s.
 - `mail_draft_save` and `mail_send` no longer write `null` as the body when
   the body is missing or empty.

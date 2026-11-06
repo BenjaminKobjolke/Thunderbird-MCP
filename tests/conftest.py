@@ -107,6 +107,7 @@ def reset_settings():
 @pytest.fixture(autouse=True)
 def no_running_command_lines(monkeypatch):
     monkeypatch.setattr(thunderbird_process, "running_command_lines", lambda: [])
+    monkeypatch.setattr(thunderbird_process, "_background_task_pids", set)
     monkeypatch.setattr(thunderbird_process, "saved_user_variable", lambda _name: None)
 
 

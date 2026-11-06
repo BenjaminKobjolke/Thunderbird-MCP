@@ -16,6 +16,11 @@ from .errors import TransportError
 if TYPE_CHECKING:
     from .profile import ThunderbirdProfile
 
+_POWERSHELL = ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command"]
+EXIT_GRACE_SECONDS = (
+    45.0  # 60 + 45 s fits the two-minute shell limit while Thunderbird finishes exit work.
+)
+
 
 def running_executable() -> pathlib.Path | None:
     """Find the executable named by a running Thunderbird command line."""
@@ -96,7 +101,7 @@ def running_pids() -> list[int]:
                 parts = [p.strip('" ') for p in line.split('","')]
                 if len(parts) >= 2 and parts[1].isdigit():
                     pids.append(int(parts[1]))
-            return pids
+            return [pid for pid in pids if pid not in _background_task_pids()]
         out = subprocess.run(
             ["pgrep", "-f", "thunderbird"], capture_output=True, text=True, check=False
         ).stdout
@@ -105,15 +110,33 @@ def running_pids() -> list[int]:
         return []
 
 
+def _background_task_pids() -> set[int]:
+    """Gecko background tasks such as cache removal or ping sending outlive the app without windows."""
+    if sys.platform != "win32":
+        return set()
+    try:
+        out = subprocess.run(
+            [
+                *_POWERSHELL,
+                "Get-CimInstance Win32_Process -Filter \"Name='thunderbird.exe' AND CommandLine LIKE '%backgroundtask%'\" | ForEach-Object ProcessId",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        ).stdout
+        return {int(line) for line in out.splitlines() if line.strip().isdigit()}
+    except (OSError, subprocess.SubprocessError):
+        return set()
+
+
 def running_command_lines() -> list[str]:
     """Command lines of running Thunderbird processes, best effort."""
     try:
         if sys.platform == "win32":
             command = [
-                "powershell.exe",
-                "-NoProfile",
-                "-NonInteractive",
-                "-Command",
+                *_POWERSHELL,
                 "Get-CimInstance Win32_Process -Filter \"Name='thunderbird.exe'\" | ForEach-Object CommandLine",
             ]
             flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -249,11 +272,14 @@ def _stop(timeout: float = 60.0) -> bool:
             except OSError:
                 pass
     deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if not is_running():
-            return True
+    graced = False
+    while is_running():
+        if time.monotonic() >= deadline:
+            if graced or sys.platform != "win32" or open_windows():
+                return False
+            deadline, graced = time.monotonic() + EXIT_GRACE_SECONDS, True
         time.sleep(1.0)
-    return not is_running()
+    return True
 
 
 def _wont_close_message() -> str:
